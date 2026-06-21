@@ -1,6 +1,6 @@
 # ENTERPRISE CHALLENGE 2026 — GOODWE + FIAP
 
-Grupo 11: Filipe Augusto Chaves (), Yury Alexander Tavares (), Murillo Gomes de Almeida (rm572196), Arthur Henrique Ruiz Ramos (rm568738)
+Grupo 11: Filipe Augusto Chaves (rm570827), Yury Alexander Tavares (rm572825), Murillo Gomes de Almeida (rm572196), Arthur Henrique Ruiz Ramos (rm568738)
 
 ## DESCRIÇÃO DO PROBLEMA E DO CONTEXTO DO DESAFIO
 
@@ -258,6 +258,8 @@ Uso de tecnologias para se conectar ao carregador e, assim, acessar o usuário:
 - Fatura: id, unidade_id, sessão_id, usuário_id
 
 **Diagrama da solucao**
+<img width="1024" height="768" alt="diagrama" src="https://github.com/user-attachments/assets/1239ed3c-4119-41cb-a6ba-d6e6b4eeaf26" />
+
 
 ## MODELO DE RATEIO DEFINIDO
 
