@@ -1,6 +1,6 @@
 # ENTERPRISE CHALLENGE 2026 — GOODWE + FIAP
 
-Grupo 11: Filipe Augusto Chaves (), Yury Alexander Tavares (), Murillo Gomes de Almeida (rm572196), Arthur Henrique Ruiz Ramos ()
+Grupo 11: Filipe Augusto Chaves (), Yury Alexander Tavares (), Murillo Gomes de Almeida (rm572196), Arthur Henrique Ruiz Ramos (rm568738)
 
 ## DESCRIÇÃO DO PROBLEMA E DO CONTEXTO DO DESAFIO
 
@@ -186,6 +186,33 @@ Regula os direitos e deveres de consumidores e distribuidoras de energia elétri
 - Distribuidora realiza a medição e faturamento dos pontos de iluminação.
 - Arrecadação da CIP (Contribuição de Iluminação Pública) é feita pela distribuidora na fatura.
 
+**Aprofundamento Frente 2 - Opção A — Mapeamento regulatório completo.**
+
+  Para a cidade de São Paulo especificamente, não encontrei uma lei municipal própria sobre carregadores de VE, o que está regendo o tema é a Lei Estadual nº 18.403/2026, que se aplica a todo o território do Estado, incluindo a capital. Segue os principais pontos específicos relevantes para SP: 
+  1- O Artigo 1º assegura ao condômino o direito de instalar, às suas expensas, estação de recarga individual em sua vaga de garagem privativa, desde que respeitadas as normas técnicas e de segurança vigentes, exigindo:
+  - compatibilidade com a carga elétrica da unidade;
+  - conformidade com as normas da distribuidora local e da ABNT;
+  - instalação por profissional habilitado com ART/RRT;
+  - comunicação formal prévia ao condomínio.
+
+2- O Artigo 2º exige que empreendimentos imobiliários com projeto aprovado após a vigência da lei prevejam, em seus sistemas elétricos, capacidade mínima de suporte para instalação futura de carregadores — mas a regulamentação técnica desse requisito ainda depende de ato do Poder Executivo, ou seja, ainda não está definida na prática. 
+
+3- Quanto ao Corpo de Bombeiros (CBPMESP): Ponto crítico, ainda incompleto:
+  - Desde maio de 2024 o Secovi-SP atua junto ao Corpo de Bombeiros do Estado de São Paulo no debate técnico sobre os requisitos de segurança aplicáveis à instalação de estações de recarga em edificações, e a     regulamentação dessas exigências (Instrução Técnica, dentro da Diretriz Nacional SAVE) ainda está em fase de elaboração/consulta pública.
+  - O superintendente do Comitê Brasileiro de Segurança contra Incêndio (CB 024) da ABNT defendeu que o problema de segurança está nas garagens, não nos veículos elétricos em si — e que são necessários sistemas de detecção de incêndio, sprinklers, extração de fumaça e proteção estrutural, independentemente do tipo de veículo estacionado.
+  - Representante do Secovi-SP criticou a falta desses detalhes na lei recémsancionada, e apontou que as diretrizes do Corpo de Bombeiros ainda não são uma Norma nem Legislação, mas devem virar Lei ao longo dos próximos anos.
+  - O Secovi-SP, inclusive, publicou um comunicado específico sobre as diretrizes do Corpo de Bombeiros para instalações SAVE em condomínios.
+  
+4- Procedimento recomendado pela OAB para instalação em condomínio em SP
+  - O Secovi-SP recomenda que administradoras exijam, antes da autorização, análise técnica formal subscrita por profissional habilitado e custeada pelo condômino interessado, avaliando a compatibilidade da       infraestrutura elétrica global do edifício e os reflexos na segurança contra incêndio.
+  
+5- Em resumo, as principais documentações para uma instalação do HCA G2 na cidade de São Paulo são: 
+  - Lei 18.403/2026 (estadual) rege o direito à instalação, mas só cobre vagas de garagem "autônomas", não vagas em área comum vinculada à unidade.
+  - Não há ainda IT do Corpo de Bombeiros (CBPMESP) finalizada e específica para carregadores — está em construção desde 2024. Isso é uma zona cinzenta de risco regulatório no momento.
+  - Não foi identificado legislação municipal própria da cidade de São Paulo sobre o tema; o que existe é estadual.
+  - O Artigo 2º da lei estadual pode eventualmente impactar projetos novos (capacidade mínima de instalação elétrica), mas a regulamentação técnica ainda não foi publicada. 
+  
+  
 ### FRENTE 3
 
 **Quais são as camadas da plataforma EV ChargeOps**
