@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+uso_carregador/
+fatura_saida/
+ref5/
