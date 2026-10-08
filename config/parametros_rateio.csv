@@ -1,0 +1,16 @@
+parametro,valor,descricao
+preco_fora_ponta,0.85,R$/kWh
+preco_intermediaria,1.20,R$/kWh
+preco_ponta,1.70,R$/kWh
+horas_ponta,18;19;20,horas cheias em dias úteis
+horas_intermediaria,17;21,horas cheias em dias úteis
+feriados,2026-01-01;2026-04-03;2026-04-21;2026-05-01;2026-06-04;2026-09-07;2026-10-12;2026-11-02;2026-11-15;2026-12-25,fora de ponta o dia todo
+antecedencia_min_agendamento_min,60,reserva só até 1 h antes; cancelamento depois disso paga no-show
+tolerancia_inicio_antes_reserva_min,30,sessão iniciada antes disso da reserva gera aviso
+carencia_ociosidade_min,15,tempo grátis após o fim da carga
+bloco_ociosidade_min,30,cada bloco iniciado é cobrado
+taxa_bloco_ociosidade,2.00,R$ por bloco; só com outro usuário na fila
+teto_ociosidade_sessao,20.00,R$ por sessão
+taxa_sem_agendamento,1.50,R$ por sessão sem reserva
+taxa_no_show,5.00,R$ por reserva não utilizada ou cancelada tarde
+custo_fixo_unidade,15.00,R$ por mês por unidade
