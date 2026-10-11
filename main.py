@@ -278,6 +278,26 @@ def exportar(r):
         detalhe.to_excel(w, sheet_name="detalhe", index=False)
     print("Gravado:", arq)
 
+# ---------------------------------------------------------------- análise da ia
+
+def analisar_ia():
+    """Executa a análise da IA a partir dos CSVs de uso.
+
+    A importação é tardia para que a aplicação principal continue abrindo
+    mesmo quando scikit-learn não estiver instalado; a dependência é necessária
+    somente ao selecionar esta opção.
+    """
+    try:
+        from ia_uso import executar
+    except ImportError as exc:
+        print("Não foi possível carregar o módulo de IA.")
+        print("Instale as dependências com: pip install -r requirements-ia.txt")
+        print(f"Detalhe: {exc}")
+        return
+
+    print("\nANÁLISE DA IA.")
+    executar(PASTA_USO, PASTA_SAIDA, dias=7)
+
 
 def gestor():
     cfg = DB["config"]
@@ -291,7 +311,7 @@ def gestor():
         return print("Senha incorreta.")
     while True:
         marcar_nao_utilizadas()
-        op = menu("GESTOR", ["Resumo do mês", "Liberações (quem iniciou)", "Agenda", "Exportar fatura (xlsx)"])
+        op = menu("GESTOR", ["Resumo do mês", "Liberações (quem iniciou)", "Agenda", "Exportar fatura (xlsx)", "Análise de IA (anomalias e previsão)"])
         if op == 0:
             return
         if op in (1, 4):
@@ -303,10 +323,12 @@ def gestor():
             for _, l in d.sort_values("inicio").tail(20).iterrows():
                 print(f"  {l.inicio} → {l.fim or 'em andamento'}  {l.nome} ({l.unidade_id}) CPF {mascara(l.cpf)}  "
                       f"{'reserva' if l.agendamento_id else 'AVULSO'}")
-        else:
+        elif op == 3:
             d = DB["agendamentos"].merge(DB["usuarios"][["usuario_id", "nome"]], on="usuario_id")
             for _, a in d.sort_values("inicio").tail(20).iterrows():
                 print(f"  #{a.id} {a.inicio} → {a.fim[11:]}  {a.nome}  {a.status}" + (" (cancel. tardio)" if a.tardio == "1" else ""))
+        elif op == 5:
+            analisar_ia()
 
 
 # ---------------------------------------------------------------- principal
