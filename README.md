@@ -14,29 +14,33 @@ O EV ChargeOps é um protótipo de sistema para administrar a utilização compa
 
 A solução combina uma aplicação de terminal, armazenamento simples em Excel, arquivos CSV de sessões de recarga, um leitor que normaliza os eventos, um módulo independente de rateio e uma camada experimental de análise com aprendizado de máquina.
 
-## 2. Evolução do projeto e justificativa das mudanças
+## 2. Relação com a Sprint 01 e justificativa dos desvios
 
-### 2.1 Da referência GoodWe ao domínio de recarga veicular
+A pesquisa, a arquitetura e o modelo de rateio definidos na Sprint 01 estão em [`docs/README_SPRINT_1.md`](docs/README_SPRINT_1.md). Esta seção compara o que foi planejado lá com o que foi implementado e justifica cada mudança.
 
-A versão inicial do trabalho estava contextualizada no desafio GoodWe e em soluções ligadas a inversores, armazenamento de energia e gestão energética. Durante a implementação, identificou-se que a estrutura de dados disponível como referência não representava adequadamente os eventos que precisávamos modelar para um carregador veicular compartilhado. O formato e os conceitos não correspondiam diretamente a sessões de recarga, identificação do usuário, reservas, leituras acumuladas de energia, fila de espera e encerramento da sessão.
+### 2.1 O que foi implementado conforme o planejado
 
-Por esse motivo, a estrutura de dados da GoodWe foi abandonada como fonte principal do simulador. Em vez de adaptar artificialmente dados que não correspondiam ao domínio, foi criado um gerador de CSVs próprios para o cenário de carregadores veiculares.
+| Planejado na Sprint 01 | Onde está na Sprint 02 |
+|---|---|
+| Registrar sessões de recarga por usuário (início, fim, duração, kWh) | `leitor_uso.py` reconstrói as sessões a partir dos eventos e leituras do carregador |
+| Calcular o consumo individual por unidade/apartamento e do condomínio como um todo | `src/rateio/fatura.py` agrega por usuário/unidade; `fatura_mensal.csv` traz o total geral |
+| Rateio com cobrança por horário de uso (adicional no horário de pico) | Faixas fora de ponta, intermediária e ponta em `src/rateio/regras.py`, com valores em `config/parametros_rateio.csv` |
+| Rateio considerando o agendamento da recarga | Taxa de sessão sem reserva e taxa de no-show/cancelamento tardio |
+| Custo fixo por unidade (atributo `custo_fixo` da entidade Unidade) | Custo fixo mensal de R$ 15,00 por unidade |
+| "Definição arbitrária dos valores unitários por margens de horário" (plano da Sprint 02) | Tarifas de demonstração parametrizadas em CSV, fora do código |
+| "Desenvolver um aplicativo de agendamento dos pontos de recarga" (plano da Sprint 02) | `main.py`: cadastro, login, reservas em blocos de 30 minutos, cancelamento, liberação do carregador e painel do gestor |
+| "IA na previsão de anomalias e de uso" (camada de aplicação) | `ia_uso.py`: detecção de anomalias (`IsolationForest` + regras) e previsão de consumo diário (`RandomForestRegressor`) |
 
-Essa mudança é uma decisão de modelagem de domínio: os dados de entrada devem refletir os eventos e as regras que o sistema precisa processar. Isso reduz mapeamentos artificiais, facilita a validação e torna os testes mais coerentes com o problema real que o protótipo pretende representar.
+### 2.2 Desvios em relação à Sprint 01
 
-### 2.2 Alterações em relação à versão anterior
-
-| Aspecto | Versão anterior / abordagem inicial | Versão atual | Justificativa |
+| Aspecto | Planejado na Sprint 01 | Implementado na Sprint 02 | Justificativa |
 |---|---|---|---|
-| Domínio dos dados | Referência inicial centrada no ecossistema GoodWe, inversores e armazenamento de energia | Eventos simulados de carregadores veiculares compartilhados | Aproximar os dados do problema de negócio escolhido. |
-| Fonte de dados para o rateio | Estrutura externa que não representava diretamente as sessões desejadas | CSVs próprios gerados por `gerar_uso_carregador.py` | Garantir controle sobre campos, cenários e consistência dos testes. |
-| Localização dos CSVs | Dependência da estrutura de origem considerada inicialmente | Subpasta `uso_carregador/`, criada ao lado do script gerador por padrão | Tornar explícito e reproduzível o caminho de entrada do leitor e do rateio. |
-| Leitura dos dados | Necessidade de adequação ao formato de origem | `leitor_uso.py` com `UsoSource`, que reconstrói sessões, leituras, reservas e usuários | Centralizar a normalização e a validação antes do cálculo financeiro. |
-| Aplicação | Fluxo voltado à análise do desafio | Aplicação CLI EV ChargeOps com cadastro, login, reservas, liberações, consulta de fatura e painel de gestor | Transformar a proposta em um fluxo demonstrável de ponta a ponta. |
-| Cobrança | Regras ainda dependentes da interpretação do domínio | Regras separadas em `src/rateio/`, parametrizadas por CSV | Facilitar manutenção, teste e rastreabilidade dos critérios financeiros. |
-| Saída do rateio | Não havia um fluxo consolidado com arquivos de saída do EV ChargeOps | `fatura_mensal.csv`, `detalhe_sessoes.csv` e `avisos.txt`; a aplicação também exporta Excel | Permitir conferência de totais, detalhamento por sessão e inspeção de inconsistências. |
-| Inteligência artificial | Módulo separado por linha de comando | Opção Análise de IA (anomalias e previsão) disponível no painel do gestor, além da execução independente de `ia_uso.py` | Facilitar o acesso à análise sem misturá-la com a cobrança oficial. |
-| Testes | Validação focada nas regras existentes do rateio | Testes do rateio mantidos e testes específicos da IA acrescentados | Reduzir regressões e verificar cenários de histórico curto, ausência de sessões e alertas. |
+| Fonte dos dados | Dados do HCA G2 lidos via OCPP/MODBUS e organizados pela API SEMS da GoodWe | CSVs simulados por `gerar_uso_carregador.py`, no formato de eventos de um carregador (início, leituras do medidor, `CarroCheio`, fim, reservas) | Não houve acesso a dados reais do carregador nem à API SEMS durante a sprint, e a estrutura de dados GoodWe disponível como referência é voltada a inversores e armazenamento de energia: não traz sessões de recarga, identificação do usuário, reservas nem fila. O simulador reproduz os eventos que o HCA G2 gera via OCPP/MODBUS (por exemplo, `CarroCheio` equivale ao `SuspendedEV` do OCPP), e a especificação em [`docs/ESPECIFICACAO_ARQUIVOS_USO.md`](docs/ESPECIFICACAO_ARQUIVOS_USO.md) indica como mapear uma exportação real do SEMS+ para as mesmas colunas. Com isso, o leitor, o rateio e a IA não precisam mudar quando houver dados reais. |
+| Cobrança por tempo | "Cobrança adicional a cada 30 minutos" de tempo de carregamento | Cobrança de R$ 2,00 por bloco de 30 minutos de **ociosidade** (veículo conectado depois de a carga terminar), com 15 minutos de carência, só quando há outro usuário na fila e com teto de R$ 20,00 por sessão | Durante o carregamento, o usuário já paga pela energia em kWh; cobrar também pelo tempo de carga penalizaria duas vezes quem tem um veículo que carrega mais devagar. O problema operacional real é o veículo que termina de carregar e continua ocupando o ponto enquanto outro morador espera. A regra de ociosidade ataca esse comportamento sem encarecer a recarga em si. |
+| Interface | "Interface gráfica amigável para usuários e gestores" | Aplicação de terminal (`main.py`) | O foco da sprint foi a lógica de sessões, rateio e IA, que é o núcleo exigido do protótipo. Uma interface de terminal permitiu demonstrar o fluxo completo (cadastro, reserva, liberação, fatura e painel do gestor) sem depender de servidor web ou framework gráfico. As funções de cálculo ficam em módulos separados (`src/rateio/`, `ia_uso.py`) e podem ser reaproveitadas por uma interface gráfica no futuro. |
+| Persistência | Banco de dados com usuários, unidades, carregadores, sessões e faturas | Excel (`ev_chargeops.xlsx`) para os dados do aplicativo; CSVs para a telemetria; CSV/Excel para as faturas | Excel e CSV são fáceis de inspecionar e não exigem instalar um servidor de banco de dados para avaliar o protótipo. A limitação está registrada na seção 12. |
+| Modelo de dados | Entidades Usuário, Unidade, Carregador, Veículo, Sessão e Fatura | Abas `usuarios`, `agendamentos` e `liberacoes` no aplicativo; veículo, sessão e leituras nos CSVs de uso; fatura e detalhe por sessão nas saídas do rateio | **Agendamento** foi acrescentado porque o modelo de rateio depende de reservas (sessão sem reserva, no-show, cancelamento tardio). **Carregador** não virou tabela porque o protótipo simula um único ponto de recarga (o HCA G2 do Energy Innovation Lab). **Unidade** é representada pelo campo `unidade_id` do usuário, já que cada unidade tem um único cadastro. **Veículo** aparece nos dados de uso de cada usuário, mas não é cadastrado no aplicativo, pois não influencia o valor cobrado. |
+| Fluxo sessão → fatura | Eventos salvos no perfil do usuário na API SEMS e cobrança gerada a partir deles | O aplicativo e os CSVs de uso são fontes separadas: reservas feitas no menu não alteram os CSVs usados no rateio | Sem acesso ao carregador real, não é possível gerar leituras de medidor a partir de uma liberação feita no menu. A separação foi mantida explícita, e o painel do gestor e a fatura usam o mesmo cálculo de `src/rateio/`. |
 
 ## 3. Funcionalidades
 
@@ -130,19 +134,16 @@ A IA não participa do cálculo da fatura oficial. Isso evita que uma estimativa
 ## 5. Estrutura de diretórios
 
 ```text
-ENTERPRISE-CHALLENGE-GOODWE-FIAP-main/
-├── main.py
-├── gerar_uso_carregador.py
-├── leitor_uso.py
-├── calcular_fatura.py
-├── ia_uso.py
-├── ev_chargeops.xlsx
-├── requirements-ia.txt
-├── README.md
-├── README_IA.md
-├── ESPECIFICACAO_ARQUIVOS_USO.md
+ENTERPRISE-CHALLENGE-GOODWE-FIAP/
+├── README.md                    # este documento (Sprint 02)
+├── requirements.txt             # dependências do projeto
+├── main.py                      # aplicação de terminal (morador e gestor)
+├── gerar_uso_carregador.py      # gerador dos CSVs de uso do carregador
+├── leitor_uso.py                # leitura e reconstrução das sessões
+├── calcular_fatura.py           # linha de comando do rateio
+├── ia_uso.py                    # detecção de anomalias e previsão de uso
 ├── config/
-│   └── parametros_rateio.csv
+│   └── parametros_rateio.csv    # tarifas e taxas
 ├── src/
 │   └── rateio/
 │       ├── __init__.py
@@ -157,33 +158,41 @@ ENTERPRISE-CHALLENGE-GOODWE-FIAP-main/
 ├── tests/
 │   ├── test_rateio.py
 │   └── test_ia_uso.py
-├── uso_carregador/       # criado pelo gerador; contém os CSVs de entrada
-└── fatura_saida/         # criada durante a geração de relatórios
+├── docs/
+│   ├── README_SPRINT_1.md           # pesquisa e planejamento da Sprint 01
+│   ├── DOCUMENTACAO_TECNICA.md      # arquitetura e regras em detalhe
+│   ├── ESPECIFICACAO_ARQUIVOS_USO.md# colunas e eventos dos CSVs de uso
+│   ├── INTERFACE_TERMINAL.md        # menus e regras da aplicação de terminal
+│   └── MODULO_IA.md                 # módulo de IA em detalhe
+├── evidencias/                  # evidências de funcionamento (ver seção 14)
+├── uso_carregador/              # criado pelo gerador; contém os CSVs de entrada
+├── fatura_saida/                # criada durante a geração de relatórios
+└── ev_chargeops.xlsx            # criado pelo main.py no primeiro uso
 ```
 
-`uso_carregador/` e `fatura_saida/` são diretórios de execução e podem não existir antes da primeira execução. O arquivo `ev_chargeops.xlsx` armazena os dados da interface do aplicativo; ele não substitui os CSVs usados pelo módulo de rateio.
+`uso_carregador/`, `fatura_saida/` e `ev_chargeops.xlsx` são gerados durante a execução e não ficam versionados no repositório. O arquivo `ev_chargeops.xlsx` armazena os dados da interface do aplicativo (cadastros, reservas, liberações e a senha do gestor, definida no primeiro acesso ao painel); ele não substitui os CSVs usados pelo módulo de rateio.
+
+### Documentação complementar
+
+- [`docs/README_SPRINT_1.md`](docs/README_SPRINT_1.md) — pesquisa das três frentes, arquitetura e modelo de rateio definidos na Sprint 01.
+- [`docs/DOCUMENTACAO_TECNICA.md`](docs/DOCUMENTACAO_TECNICA.md) — arquitetura, fluxo de dados e regras de cobrança em detalhe.
+- [`docs/ESPECIFICACAO_ARQUIVOS_USO.md`](docs/ESPECIFICACAO_ARQUIVOS_USO.md) — formato dos CSVs de uso do carregador.
+- [`docs/INTERFACE_TERMINAL.md`](docs/INTERFACE_TERMINAL.md) — menus, regras de agendamento e roteiro de teste da aplicação.
+- [`docs/MODULO_IA.md`](docs/MODULO_IA.md) — funcionamento e limitações do módulo de IA.
+- [`src/rateio/README.md`](src/rateio/README.md) — organização interna do pacote de rateio.
 
 ## 6. Requisitos e instalação
 
 - Python 3.10 ou superior recomendado.
-- Dependências principais: `pandas` e `openpyxl`.
-- Para o módulo de IA: `scikit-learn`.
+- Dependências: `pandas` e `openpyxl` (aplicativo e rateio) e `scikit-learn` (módulo de IA), todas listadas em `requirements.txt`.
 
-Abra um terminal na raiz do projeto, onde estão `main.py` e `gerar_uso_carregador.py`.
-
-### Instalar as dependências do aplicativo e do rateio
+Abra um terminal na raiz do projeto, onde estão `main.py` e `gerar_uso_carregador.py`, e instale as dependências:
 
 ```bash
-python -m pip install pandas openpyxl
+python -m pip install -r requirements.txt
 ```
 
-### Instalar as dependências adicionais da IA
-
-```bash
-python -m pip install -r requirements-ia.txt
-```
-
-O arquivo `requirements-ia.txt` instala `pandas` e `scikit-learn`. O uso da IA é opcional: a opção no painel do gestor importa o módulo sob demanda. Cadastro e rateio continuam funcionando sem carregar a IA; para usar a análise, instale as dependências de `requirements-ia.txt`.
+A opção de IA no painel do gestor importa o módulo sob demanda: se o `scikit-learn` não estiver instalado, cadastro, reservas e rateio continuam funcionando e apenas a análise de IA fica indisponível.
 
 > No Windows, se `python` não estiver associado à versão instalada, tente usar `py` no lugar do comando `python`.
 
@@ -414,7 +423,7 @@ Os testes automatizados ajudam a detectar regressões, mas não substituem teste
 Instale as dependências adicionais:
 
 ```bash
-python -m pip install -r requirements-ia.txt
+python -m pip install -r requirements.txt
 ```
 
 ### A fatura apresenta avisos ou sessões não identificadas
@@ -430,6 +439,10 @@ python ia_uso.py
 ```
 
 O parâmetro `--anomalias` injeta problemas de dados no conjunto sintético para exercitar as validações. Para voltar ao cenário padrão, gere novamente sem essa opção.
+
+### Esqueci a senha do gestor
+
+A senha do gestor fica gravada (em hash) na aba `config` de `ev_chargeops.xlsx`. Para defini-la novamente, apague essa linha da aba ou remova o arquivo `ev_chargeops.xlsx` (isso também apaga os cadastros e reservas feitos no aplicativo). No próximo acesso ao painel, o programa pede uma nova senha.
 
 ### Quero apagar os resultados e começar novamente
 
