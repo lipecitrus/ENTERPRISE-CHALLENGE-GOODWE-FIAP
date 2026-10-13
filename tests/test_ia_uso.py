@@ -54,11 +54,9 @@ class TestIAUso(unittest.TestCase):
         resultado = detectar_anomalias([s])
         self.assertIn("soc_incoerente", resultado.iloc[0]["tipo"])
 
-    def test_sessao_sem_agendamento_e_sinalizada_para_revisao(self):
-        s = montar_sessao(0)
-        resultado = detectar_anomalias([s])
-        self.assertIn("sem_agendamento", resultado.iloc[0]["tipo"])
-        self.assertIn("autorizada", resultado.iloc[0]["motivo"])
+    def test_sessao_avulsa_normal_nao_e_anomalia(self):
+        # uso sem reserva é permitido (paga a taxa); sozinho não deve gerar alerta
+        self.assertTrue(detectar_anomalias([montar_sessao(0)]).empty)
 
     def test_reserva_criada_com_menos_de_uma_hora_e_sinalizada(self):
         inicio = datetime(2026, 9, 1, 10, 0)

@@ -150,7 +150,9 @@ def cobrar_sessao(s: Sessao, par: Parametros) -> CobrancaSessao:
         kwh=s.kwh, kwh_faixa=kwh, energia=regras.custo_energia(kwh, par),
         minutos_ociosos=minutos, blocos_ociosidade=blocos, ociosidade=regras.custo_ociosidade(blocos, par),
         taxa_sem_reserva=regras.taxa_sem_reserva(s, par),
-        observacao=f"{minutos} min parado com fila" if blocos else "")
+        observacao=(f"{minutos} min parado com fila" if blocos else "")
+        + ("; " if blocos and regras.fora_da_reserva(s) else "")
+        + ("iniciada após o fim da reserva (cobrada como avulsa)" if regras.fora_da_reserva(s) else ""))
 
 
 def cobrar_nao_identificada(s: Sessao, par: Parametros, motivo: str) -> CobrancaSessao:
@@ -200,6 +202,7 @@ def calcular_rateio(lido: ResultadoLeitura, par: Parametros, competencia: str | 
             nao_ident.append(cobrar_nao_identificada(s, par, motivo))
             continue
         avisos += validacoes.inicio_antes_da_reserva(s, par)
+        avisos += validacoes.inicio_depois_da_reserva(s)
         faturas[s.usuario_id].itens.append(cobrar_sessao(s, par))
 
     for e in lido.eventos_reserva:

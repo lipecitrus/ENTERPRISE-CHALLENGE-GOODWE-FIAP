@@ -143,7 +143,8 @@ ENTERPRISE-CHALLENGE-GOODWE-FIAP/
 ├── calcular_fatura.py           # linha de comando do rateio
 ├── ia_uso.py                    # detecção de anomalias e previsão de uso
 ├── config/
-│   └── parametros_rateio.csv    # tarifas e taxas
+│   ├── parametros_rateio.csv    # tarifas e taxas
+│   └── usuarios.csv             # cadastro: código, nome e unidade dos usuários dos CSVs
 ├── src/
 │   └── rateio/
 │       ├── __init__.py
@@ -362,7 +363,7 @@ O módulo `ia_uso.py` acrescenta duas análises independentes da cobrança ofici
 - Usa **Isolation Forest** (`IsolationForest`) para sinalizar sessões com características estatisticamente incomuns.
 - Complementa o modelo com verificações explícitas de energia negativa, duração inválida, potência elevada e identificação incompleta.
 - Verifica SOC fora de 0%–100% e queda relevante do SOC enquanto o medidor acumulado aumenta.
-- Sinaliza sessões sem agendamento, início fora da janela reservada e reservas criadas com menos de 60 minutos de antecedência. Sessões avulsas podem ser legítimas e ficam pendentes de conferência humana.
+- Sinaliza início fora da janela reservada e reservas criadas com menos de 60 minutos de antecedência (valor lido de `config/parametros_rateio.csv`). Sessão avulsa, sem reserva, é permitida e paga taxa; por isso não é tratada como anomalia.
 - Produz categorias e motivos de alerta para apoiar a revisão humana.
 
 Um alerta significa que o registro merece análise; **não comprova fraude, defeito elétrico ou uso indevido**. A detecção depende da qualidade e representatividade dos dados. Como o CSV não informa a capacidade nominal da bateria por veículo, o módulo ainda não verifica a coerência quantitativa entre kWh e variação do SOC; essa extensão requer cadastro de capacidade e tolerâncias de medição/BMS.

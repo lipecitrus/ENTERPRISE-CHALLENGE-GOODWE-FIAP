@@ -83,9 +83,16 @@ def custo_ociosidade(blocos: int, par: Parametros) -> float:
     return min(blocos * par.taxa_bloco, par.teto_ociosidade)
 
 
+def fora_da_reserva(s: Sessao) -> bool:
+    """True se a sessão começou no fim da janela da reserva ou depois dele."""
+    r = s.reserva
+    return bool(r and r.fim and s.inicio >= r.fim)
+
+
 def taxa_sem_reserva(s: Sessao, par: Parametros) -> float:
-    """Regra 3: sessão avulsa (sem agendamento_id) paga a taxa simples."""
-    return 0.0 if s.reserva else par.taxa_sem_reserva
+    """Regra 3: sessão avulsa paga a taxa simples. Sessão que começa depois do fim da
+    reserva também é avulsa: a reserva não vale mais, o usuário se identificou no carregador."""
+    return par.taxa_sem_reserva if (not s.reserva or fora_da_reserva(s)) else 0.0
 
 
 def motivo_cobranca_reserva(e: EventoReserva, par: Parametros) -> Optional[str]:

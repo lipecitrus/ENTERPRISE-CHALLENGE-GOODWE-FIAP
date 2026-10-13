@@ -52,6 +52,13 @@ def inicio_antes_da_reserva(s: Sessao, par: Parametros) -> list[str]:
     return []
 
 
+def inicio_depois_da_reserva(s: Sessao) -> list[str]:
+    r = s.reserva
+    if r and r.fim and s.inicio >= r.fim:
+        return [f"{s.id}: iniciada depois do fim da reserva {r.id}; cobrada como sessão avulsa"]
+    return []
+
+
 def leituras_insuficientes(s: Sessao) -> list[str]:
     if len(s.leituras) < 2:
         return [f"{s.id}: leituras insuficientes; energia na faixa do horário de início"]

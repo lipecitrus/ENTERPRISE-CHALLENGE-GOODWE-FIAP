@@ -237,18 +237,18 @@ Gerando com a mesma versão do gerador e a **semente 5**:
 python gerar_uso_carregador.py --seed 5 --saida ref5
 ```
 
-o resultado esperado da fatura (34 sessões, 774 kWh, **0 avisos**) é:
+o resultado esperado da fatura (34 sessões, 774 kWh, **1 aviso**: `S0010` começou depois do fim da reserva `AG0010`, então é cobrada como avulsa) é:
 
 | Unidade | Usuário | Sessões | kWh | Energia | Ociosidade | Sem reserva | No-show | Fixo | **Total** |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| A-11 | Ana Beatriz Souza | 7 | 154,47 | 159,06 | 0,00 | 1,50 | 0,00 | 15,00 | **175,56** |
+| A-11 | Ana Beatriz Souza | 7 | 154,47 | 159,07 | 0,00 | 1,50 | 0,00 | 15,00 | **175,57** |
 | B-14 | Ricardo Mendes | 6 | 277,66 | 269,56 | 0,00 | 6,00 | 0,00 | 15,00 | **290,56** |
 | B-21 | Juliana Castro | 11 | 129,99 | 140,10 | 22,00 | 10,50 | 0,00 | 15,00 | **187,60** |
-| B-33 | Marcos Vinícius Rocha | 6 | 110,36 | 101,67 | 0,00 | 6,00 | 5,00 | 15,00 | **127,67** |
-| B-42 | Patrícia Nogueira | 4 | 101,54 | 86,31 | 0,00 | 1,50 | 0,00 | 15,00 | **102,81** |
-| | **Total a arrecadar** | | | | | | | | **R$ 884,19** |
+| B-33 | Marcos Vinícius Rocha | 6 | 110,36 | 101,67 | 0,00 | 7,50 | 5,00 | 15,00 | **129,17** |
+| B-42 | Patrícia Nogueira | 4 | 101,54 | 86,30 | 0,00 | 1,50 | 0,00 | 15,00 | **102,80** |
+| | **Total a arrecadar** | | | | | | | | **R$ 885,70** |
 
-Casos úteis dentro dessa mesma base: sessão `S0009` (ociosidade de R$ 16,00, exemplo da seção 7), sessão `S0020` (ociosidade de R$ 6,00, 85 min com fila) e a reserva `AG0004` do usuário U04 (no-show de R$ 5,00).
+Casos úteis dentro dessa mesma base: sessão `S0009` (ociosidade de R$ 16,00, exemplo da seção 7), sessão `S0020` (ociosidade de R$ 6,00, 85 min com fila) a reserva `AG0004` do usuário U04 (no-show de R$ 5,00) e a sessão `S0010` do U04, que começou 2 h depois do fim da reserva (o ponto estava ocupado) e paga a taxa de sessão avulsa de R$ 1,50.
 
 Para testar as validações, gere dados com problemas injetados:
 

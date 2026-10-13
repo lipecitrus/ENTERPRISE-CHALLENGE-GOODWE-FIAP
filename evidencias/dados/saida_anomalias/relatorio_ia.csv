@@ -1,24 +1,9 @@
 ﻿tipo;data;sessao_id;usuario_id;kwh;kwh_previsto;score_ia;metodo;observacao
-"identificacao;sem_agendamento";2026-09-01 23:30:00;S0002;NAO_IDENTIFICADO;14.111;;-0.04937;Análise estatística e regras;"sessão sem identificação completa; sessão sem agendamento associado; confirmar se a recarga avulsa foi autorizada"
-estatistica;2026-09-05 19:30:00;S0006;U03;8.734;;0.02143;Análise estatística e regras;combinação de consumo, duração e potência diferente do padrão observado
-sem_agendamento;2026-09-07 09:01:00;S0007;U05;24.893;;-0.10235;Análise estatística e regras;"sessão sem agendamento associado; confirmar se a recarga avulsa foi autorizada"
-antecedencia_reserva;2026-09-08 19:37:00;S0008;U01;21.392;;-0.14686;Análise estatística e regras;reserva criada com menos de 60 minutos de antecedência
-fora_agendamento;2026-09-10 08:06:00;S0010;U04;20.536;;-0.15566;Análise estatística e regras;sessão iniciada no fim ou após o término da reserva
-"sem_agendamento;estatistica";2026-09-10 11:29:00;S0011;U02;54.294;;0.01891;Análise estatística e regras;"sessão sem agendamento associado; confirmar se a recarga avulsa foi autorizada; combinação de consumo, duração e potência diferente do padrão observado"
-sem_agendamento;2026-09-11 19:40:00;S0012;U03;10.309;;-0.06399;Análise estatística e regras;"sessão sem agendamento associado; confirmar se a recarga avulsa foi autorizada"
-sem_agendamento;2026-09-12 18:39:00;S0013;U04;20.415;;-0.12259;Análise estatística e regras;"sessão sem agendamento associado; confirmar se a recarga avulsa foi autorizada"
-sem_agendamento;2026-09-14 19:21:00;S0015;U03;18.007;;-0.02429;Análise estatística e regras;"sessão sem agendamento associado; confirmar se a recarga avulsa foi autorizada"
-sem_agendamento;2026-09-15 16:15:00;S0017;U02;50.665;;-0.00052;Análise estatística e regras;"sessão sem agendamento associado; confirmar se a recarga avulsa foi autorizada"
-sem_agendamento;2026-09-16 20:35:00;S0018;U03;8.68;;-0.06505;Análise estatística e regras;"sessão sem agendamento associado; confirmar se a recarga avulsa foi autorizada"
-sem_agendamento;2026-09-17 11:41:00;S0019;U04;16.485;;-0.1119;Análise estatística e regras;"sessão sem agendamento associado; confirmar se a recarga avulsa foi autorizada"
-sem_agendamento;2026-09-20 09:00:00;S0023;U04;17.133;;-0.06298;Análise estatística e regras;"sessão sem agendamento associado; confirmar se a recarga avulsa foi autorizada"
-"sem_agendamento;estatistica";2026-09-21 18:22:00;S0024;U03;12.692;;0.00022;Análise estatística e regras;"sessão sem agendamento associado; confirmar se a recarga avulsa foi autorizada; combinação de consumo, duração e potência diferente do padrão observado"
-sem_agendamento;2026-09-24 03:30:00;S0028;U03;10.696;;-0.03573;Análise estatística e regras;"sessão sem agendamento associado; confirmar se a recarga avulsa foi autorizada"
-sem_agendamento;2026-09-24 22:02:00;S0029;U02;49.171;;-0.03838;Análise estatística e regras;"sessão sem agendamento associado; confirmar se a recarga avulsa foi autorizada"
-sem_agendamento;2026-09-27 20:17:00;S0030;U04;17.901;;-0.11729;Análise estatística e regras;"sessão sem agendamento associado; confirmar se a recarga avulsa foi autorizada"
-sem_agendamento;2026-09-28 20:34:00;S0031;U01;21.392;;-0.11128;Análise estatística e regras;"sessão sem agendamento associado; confirmar se a recarga avulsa foi autorizada"
-"sem_agendamento;estatistica";2026-09-29 00:02:00;S0032;U03;9.548;;0.00521;Análise estatística e regras;"sessão sem agendamento associado; confirmar se a recarga avulsa foi autorizada; combinação de consumo, duração e potência diferente do padrão observado"
-sem_agendamento;2026-09-30 00:25:00;S0034;U02;49.572;;-0.02255;Análise estatística e regras;"sessão sem agendamento associado; confirmar se a recarga avulsa foi autorizada"
+identificacao;2026-09-01 23:30:00;S0002;NAO_IDENTIFICADO;14.111;;-0.05937;Análise estatística e regras;sessão sem identificação completa
+estatistica;2026-09-05 19:30:00;S0006;U03;8.734;;0.01143;Análise estatística e regras;combinação de consumo, duração e potência diferente do padrão observado
+antecedencia_reserva;2026-09-08 19:37:00;S0008;U01;21.392;;-0.15686;Análise estatística e regras;reserva criada com menos de 60 minutos de antecedência
+fora_agendamento;2026-09-10 08:06:00;S0010;U04;20.536;;-0.16566;Análise estatística e regras;sessão iniciada no fim ou após o término da reserva
+estatistica;2026-09-10 11:29:00;S0011;U02;54.294;;0.0089;Análise estatística e regras;combinação de consumo, duração e potência diferente do padrão observado
 previsao;2026-10-01;;;;31.242;;Previsão de consumo;Estimativa, não é medição real.
 previsao;2026-10-02;;;;25.046;;Previsão de consumo;Estimativa, não é medição real.
 previsao;2026-10-03;;;;38.799;;Previsão de consumo;Estimativa, não é medição real.

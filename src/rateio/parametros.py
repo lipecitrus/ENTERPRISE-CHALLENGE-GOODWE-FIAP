@@ -113,6 +113,12 @@ class Parametros:
         negativos = [f for f, v in par.preco.items() if v < 0]
         if negativos:
             raise ErroParametros(f"tarifa negativa: {', '.join(negativos)}")
+        taxas = {"taxa_bloco_ociosidade": par.taxa_bloco, "teto_ociosidade_sessao": par.teto_ociosidade,
+                 "taxa_sem_agendamento": par.taxa_sem_reserva, "taxa_no_show": par.taxa_no_show,
+                 "custo_fixo_unidade": par.custo_fixo}
+        negativas = [n for n, v in taxas.items() if v < 0]
+        if negativas:
+            raise ErroParametros(f"valor negativo: {', '.join(negativas)}")
         return par
 
 

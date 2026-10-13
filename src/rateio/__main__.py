@@ -18,8 +18,11 @@ def main(argv: list[str]) -> int:
     saida = argv[2] if len(argv) > 2 else RAIZ / "fatura_saida"
     try:
         r = calcular_da_pasta(base)
-    except (ErroLeitura, ErroParametros) as e:
+    except ErroLeitura as e:
         print(f"[ERRO] {e}  (para gerar dados: python gerar_uso_carregador.py)")
+        return 1
+    except ErroParametros as e:
+        print(f"[ERRO] {e}  (confira config/parametros_rateio.csv)")
         return 1
     gravar(r, saida)
     print(resumo(r, saida))

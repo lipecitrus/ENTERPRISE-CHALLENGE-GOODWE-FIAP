@@ -146,8 +146,10 @@ def calcular():
     """Leitor (frente 1) + rateio (frente 2) do repositório."""
     try:
         return calcular_da_pasta(PASTA_USO)
-    except (ErroLeitura, ErroParametros) as e:
+    except ErroLeitura as e:
         print(f"[ERRO] {e}\nGere dados com: python gerar_uso_carregador.py --seed 5")
+    except ErroParametros as e:
+        print(f"[ERRO] {e}\nConfira config/parametros_rateio.csv")
 
 
 # ---------------------------------------------------------------- cadastro e login
@@ -324,11 +326,15 @@ def gestor():
                 print(resumo(r, PASTA_SAIDA)) if op == 1 else exportar(r)
         elif op == 2:
             d = DB["liberacoes"].merge(DB["usuarios"][["usuario_id", "nome", "cpf"]], on="usuario_id")
+            if d.empty:
+                print("Nenhuma liberação registrada ainda (elas aparecem quando um morador usa 'Iniciar carregamento').")
             for _, l in d.sort_values("inicio").tail(20).iterrows():
                 print(f"  {l.inicio} → {l.fim or 'em andamento'}  {l.nome} ({l.unidade_id}) CPF {mascara(l.cpf)}  "
                       f"{'reserva' if l.agendamento_id else 'AVULSO'}")
         elif op == 3:
             d = DB["agendamentos"].merge(DB["usuarios"][["usuario_id", "nome"]], on="usuario_id")
+            if d.empty:
+                print("Nenhum agendamento ainda (eles aparecem quando um morador faz 'Novo agendamento').")
             for _, a in d.sort_values("inicio").tail(20).iterrows():
                 print(f"  #{a.id} {a.inicio} → {a.fim[11:]}  {a.nome}  {a.status}" + (" (cancel. tardio)" if a.tardio == "1" else ""))
         elif op == 5:

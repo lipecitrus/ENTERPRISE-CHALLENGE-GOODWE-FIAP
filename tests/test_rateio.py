@@ -201,9 +201,9 @@ class TestAceitacaoSemente5(unittest.TestCase):
     def test_totais_gerais(self):
         self.assertEqual(self.r.n_sessoes, 34)
         self.assertEqual(round(self.r.kwh_total), 774)
-        self.assertEqual(self.r.avisos, [])
+        self.assertEqual(self.r.avisos, ["S0010: iniciada depois do fim da reserva AG0010; cobrada como sessão avulsa"])   # única sessão fora da janela da reserva
         self.assertEqual(self.r.nao_identificadas, [])
-        self.assertEqual(self.r.total_arrecadar, 884.20)
+        self.assertEqual(self.r.total_arrecadar, 885.70)
         self.assertEqual(self.r.competencia, "2026-09")
 
     def test_tabela_por_usuario(self):
@@ -211,7 +211,7 @@ class TestAceitacaoSemente5(unittest.TestCase):
             "U01": ("A-11", 7, 154.47, 159.07, 0.00, 1.50, 0.00, 175.57),
             "U02": ("B-14", 6, 277.66, 269.56, 0.00, 6.00, 0.00, 290.56),
             "U03": ("B-21", 11, 129.99, 140.10, 22.00, 10.50, 0.00, 187.60),
-            "U04": ("B-33", 6, 110.36, 101.67, 0.00, 6.00, 5.00, 127.67),
+            "U04": ("B-33", 6, 110.36, 101.67, 0.00, 7.50, 5.00, 129.17),
             "U05": ("B-42", 4, 101.54, 86.30, 0.00, 1.50, 0.00, 102.80),
         }
         self.assertEqual([f.usuario_id for f in self.r.faturas], list(esperado))
@@ -262,7 +262,7 @@ class TestAceitacaoSemente5(unittest.TestCase):
             self.assertTrue(linhas[3].endswith(";187,60"))
             detalhe = arqs[1].read_text(encoding="utf-8-sig").splitlines()
             self.assertEqual(len(detalhe), 1 + 34 + 1)                   # cabeçalho + sessões + no-show
-            self.assertEqual(arqs[2].read_text(encoding="utf-8"), "")
+            self.assertEqual(arqs[2].read_text(encoding="utf-8"), "S0010: iniciada depois do fim da reserva AG0010; cobrada como sessão avulsa\n")
 
 
 # ------------------------------------------------------------------ 3. anomalias
@@ -291,7 +291,7 @@ class TestAnomalias(unittest.TestCase):
         self.assertGreater(ni.energia, 0)
         cobradas = {i.sessao_id for f in self.r.faturas for i in f.itens}
         self.assertNotIn(ni.sessao_id, cobradas)
-        self.assertEqual(self.r.total_arrecadar, 870.71)
+        self.assertEqual(self.r.total_arrecadar, 872.21)
 
 
 # ------------------------------------------------------------------ 4. propriedades e linha de comando
@@ -322,9 +322,42 @@ class TestPropriedades(unittest.TestCase):
                         for item in f.itens:
                             self.assertEqual(item.energia, centavos(item.energia))
                             self.assertLessEqual(item.ociosidade, PAR.teto_ociosidade)
-                            self.assertEqual(item.taxa_sem_reserva > 0, item.tipo == "sessao" and not item.agendamento_id)
+                            # sessão sem reserva sempre paga a taxa (a fora da janela também, por isso só um sentido)
+                            if item.tipo == "sessao" and not item.agendamento_id:
+                                self.assertGreater(item.taxa_sem_reserva, 0)
                     for ni in r.nao_identificadas:
                         self.assertEqual(ni.total, ni.energia)
+
+
+class TestReservaForaDaJanela(unittest.TestCase):
+    """Sessão que começa depois do fim da reserva é avulsa e gera aviso."""
+
+    def test_semente5_S0010(self):
+        r = calcular_da_pasta(gerar(Path(tempfile.mkdtemp()) / "ref5", "--seed", "5"))
+        c = r.cobranca("S0010")
+        self.assertEqual(c.taxa_sem_reserva, PAR.taxa_sem_reserva)
+        self.assertIn("avulsa", c.observacao)
+        self.assertTrue(any(a.startswith("S0010:") for a in r.avisos))
+
+    def test_taxa_negativa_e_recusada(self):
+        from src.rateio import ErroParametros, Parametros
+        base = {"preco_fora_ponta": "1", "preco_intermediaria": "1", "preco_ponta": "1", "horas_ponta": "18",
+                "horas_intermediaria": "17", "feriados": "", "antecedencia_min_agendamento_min": "60",
+                "carencia_ociosidade_min": "15", "bloco_ociosidade_min": "30", "taxa_bloco_ociosidade": "2",
+                "teto_ociosidade_sessao": "20", "taxa_sem_agendamento": "1.5", "taxa_no_show": "5",
+                "custo_fixo_unidade": "15"}
+        Parametros.de_dict(base)                                   # válido
+        with self.assertRaises(ErroParametros):
+            Parametros.de_dict({**base, "taxa_no_show": "-5"})
+
+    def test_nome_vem_do_cadastro_com_acento(self):
+        lido = UsoSource().ler(gerar(Path(tempfile.mkdtemp()) / "ref5", "--seed", "5"))
+        self.assertEqual(lido.usuarios["U05"].nome, "Patrícia Nogueira")
+
+    def test_copia_do_arquivo_nao_troca_o_nome(self):
+        pasta = gerar(Path(tempfile.mkdtemp()) / "ref5", "--seed", "5")
+        (pasta / "uso_U02_copia.csv").write_bytes((pasta / "uso_U02_ricardo_mendes.csv").read_bytes())
+        self.assertEqual(UsoSource().ler(pasta).usuarios["U02"].nome, "Ricardo Mendes")
 
 
 class TestLinhaDeComando(unittest.TestCase):
@@ -335,7 +368,7 @@ class TestLinhaDeComando(unittest.TestCase):
                                capture_output=True, text=True, encoding="utf-8", env={**os.environ,
                                                                                        "PYTHONIOENCODING": "utf-8"})
             self.assertEqual(p.returncode, 0, p.stdout + p.stderr)
-            self.assertIn("R$ 884,20", p.stdout)
+            self.assertIn("R$ 885,70", p.stdout)
             self.assertIn("Competência 2026-09", p.stdout)
             for nome in ("fatura_mensal.csv", "detalhe_sessoes.csv", "avisos.txt"):
                 self.assertTrue((saida / nome).is_file(), nome)

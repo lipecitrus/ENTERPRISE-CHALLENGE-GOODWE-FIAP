@@ -16,10 +16,12 @@ import pandas as pd
 from sklearn.ensemble import IsolationForest, RandomForestRegressor
 
 from leitor_uso import ErroLeitura, UsoSource
+from src.rateio import carregar_parametros
 
 RAIZ = Path(__file__).resolve().parent
 PASTA_USO_PADRAO = RAIZ / "uso_carregador"
 PASTA_SAIDA_PADRAO = RAIZ / "fatura_saida"
+ANTECEDENCIA_MIN = carregar_parametros().antecedencia      # a mesma regra do rateio (config/parametros_rateio.csv)
 
 
 def _features_sessao(sessao) -> dict:
@@ -74,7 +76,7 @@ def detectar_anomalias(sessoes) -> pd.DataFrame:
     dados["score_ia"] = 0.0
     dados["flag_ia"] = False
     if len(dados) >= 5:
-        modelo = IsolationForest(n_estimators=150, contamination=0.10, random_state=42)
+        modelo = IsolationForest(n_estimators=150, contamination=0.05, random_state=42)
         dados["flag_ia"] = modelo.fit_predict(dados[num]) == -1
         dados["score_ia"] = -modelo.decision_function(dados[num])
 
@@ -103,15 +105,14 @@ def detectar_anomalias(sessoes) -> pd.DataFrame:
 
         ag_id = str(r["agendamento_id"] or "").strip()
         res_ini, res_fim, res_criada = r["reserva_inicio"], r["reserva_fim"], r["reserva_criada_em"]
-        if not ag_id:
-            sinalizar("sem_agendamento", "sessão sem agendamento associado; confirmar se a recarga avulsa foi autorizada")
-        else:
+        if ag_id:                       # uso avulso é permitido (paga a taxa); só confere as reservas
             if pd.notna(res_ini) and r["inicio"] < res_ini:
                 sinalizar("fora_agendamento", "sessão iniciada antes da janela da reserva")
             if pd.notna(res_fim) and r["inicio"] >= res_fim:
                 sinalizar("fora_agendamento", "sessão iniciada no fim ou após o término da reserva")
-            if pd.notna(res_ini) and pd.notna(res_criada) and (res_ini - res_criada).total_seconds() < 60 * 60:
-                sinalizar("antecedencia_reserva", "reserva criada com menos de 60 minutos de antecedência")
+            if pd.notna(res_ini) and pd.notna(res_criada) and (res_ini - res_criada) < ANTECEDENCIA_MIN:
+                minutos = int(ANTECEDENCIA_MIN.total_seconds() // 60)
+                sinalizar("antecedencia_reserva", f"reserva criada com menos de {minutos} minutos de antecedência")
             if r["identificacao"] != "reserva":
                 sinalizar("agendamento_identificacao", "sessão possui agendamento associado, mas identificação não indica uso por reserva")
 

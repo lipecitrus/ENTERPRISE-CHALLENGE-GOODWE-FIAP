@@ -4,7 +4,7 @@ O módulo `ia_uso.py` acrescenta uma análise experimental aos CSVs veiculares j
 
 ## O que faz
 
-- **Detecção de anomalias:** combina `IsolationForest` com regras determinísticas e explicáveis. Além de medidor, duração, potência e identificação, verifica SOC fora de 0%–100%, queda de SOC enquanto a energia acumulada aumenta, sessão sem agendamento associado, início fora da janela da reserva e reserva criada com menos de 60 minutos de antecedência.
+- **Detecção de anomalias:** combina `IsolationForest` com regras determinísticas e explicáveis. Além de medidor, duração, potência e identificação, verifica SOC fora de 0%–100%, queda de SOC enquanto a energia acumulada aumenta, início fora da janela da reserva e reserva criada com menos de 60 minutos de antecedência.
 - **Previsão de uso:** agrega o consumo em kWh por dia e usa `RandomForestRegressor` com atributos de calendário e defasagens do consumo. Se o histórico tiver menos de 10 dias, usa uma média móvel dos últimos 7 dias, evitando treinar um modelo complexo com poucos exemplos.
 - **Relatório:** grava `fatura_saida/relatorio_ia.csv` com alertas e previsões.
 
@@ -36,7 +36,7 @@ O exemplo acima lê a pasta `uso_carregador`, salva o relatório em `fatura_said
 python -m unittest discover -s tests -v
 ```
 
-O teste `tests/test_ia_uso.py` cobre previsão com histórico suficiente, fallback com histórico curto, ausência de sessões, identificação, SOC fora do intervalo, SOC incoerente, sessões sem agendamento, reservas criadas com pouca antecedência e início fora da janela reservada.
+O teste `tests/test_ia_uso.py` cobre previsão com histórico suficiente, fallback com histórico curto, ausência de sessões, identificação, SOC fora do intervalo, SOC incoerente, sessão avulsa que não gera alerta, reservas criadas com pouca antecedência e início fora da janela reservada.
 
 ## Limitações e uso responsável
 

@@ -221,9 +221,23 @@ def _booleano(txt: str) -> bool:
     return (txt or "").strip().lower() in ("1", "true", "sim", "s", "yes", "y")
 
 
+CADASTRO_PADRAO = Path(__file__).resolve().parent / "config" / "usuarios.csv"
+
+
+def _ler_cadastro(caminho: Path) -> dict[str, str]:
+    """Lê usuarios.csv (usuario_id,nome,unidade_id) e devolve {usuario_id: nome}. Sem arquivo, vazio."""
+    try:
+        with open(caminho, newline="", encoding="utf-8-sig") as f:
+            return {l["usuario_id"].strip(): l["nome"].strip() for l in csv.DictReader(f)
+                    if l.get("usuario_id") and l.get("nome")}
+    except (OSError, KeyError):
+        return {}
+
+
 def _nome_do_arquivo(stem: str, uid: str) -> str:
+    """Último recurso: nome tirado de uso_<id>_<nome>.csv, só se o arquivo for mesmo do usuário."""
     partes = stem.split("_")
-    if len(partes) > 2 and partes[0].lower() == "uso":
+    if len(partes) > 2 and partes[0].lower() == "uso" and partes[1].upper() == uid.upper():
         return " ".join(partes[2:]).title()
     return uid
 
@@ -415,11 +429,15 @@ class UsoSource:
                 reserva=reserva_de(ini_l), leituras=pts, arquivo=ini_l["arquivo"]))
         sessoes.sort(key=lambda s: s.inicio)
 
+        cadastro = _ler_cadastro(CADASTRO_PADRAO)
         usuarios_obj: dict[str, UsoUsuario] = {}
         for l in linhas:
             uid = l["usuario"]
             if uid and uid not in usuarios_obj:
-                usuarios_obj[uid] = UsoUsuario(uid, _nome_do_arquivo(Path(l["arquivo"]).stem, uid), l["unidade"])
+                nome = cadastro.get(uid) or _nome_do_arquivo(Path(l["arquivo"]).stem, uid)
+                usuarios_obj[uid] = UsoUsuario(uid, nome, l["unidade"])
+            elif uid and usuarios_obj[uid].nome == uid:      # nome ainda não achado: tenta este arquivo
+                usuarios_obj[uid].nome = cadastro.get(uid) or _nome_do_arquivo(Path(l["arquivo"]).stem, uid)
             if uid and l["arquivo"] not in usuarios_obj[uid].arquivos:
                 usuarios_obj[uid].arquivos.append(l["arquivo"])
         for s in sessoes:

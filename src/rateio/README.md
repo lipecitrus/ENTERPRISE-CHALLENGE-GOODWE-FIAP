@@ -34,7 +34,7 @@ r.total_arrecadar, r.fatura("U03").total, r.cobranca("S0009").ociosidade
 ## Testes (`tests/test_rateio.py`)
 
 - Regras isoladas com sessões montadas à mão.
-- Aceitação da semente 5: 34 sessões, 774 kWh, 0 avisos, **R$ 884,20**, tabela por usuário,
+- Aceitação da semente 5: 34 sessões, 774 kWh, 1 aviso (S0010), **R$ 885,70**, tabela por usuário,
   S0009 (R$ 27,80; 237 min → 8 blocos), S0020 (85 min → R$ 6,00), no-show AG0004.
 - `--anomalias`: os 3 problemas injetados geram aviso; a sessão sem usuário vai para `NAO_IDENTIFICADO`.
 - Propriedades em outras sementes, outro mês e com anomalias (toda sessão cobrada uma única vez,
@@ -46,9 +46,9 @@ r.total_arrecadar, r.fatura("U03").total, r.cobranca("S0009").ociosidade
 - **Centavos:** cada cobrança (energia, ociosidade e taxas de uma sessão, no-show) é arredondada a
   centavos, meio para cima, no momento em que é criada; a fatura só soma valores já arredondados.
   Assim as linhas do detalhe fecham exatamente com o total que o morador vê.
-  Consequência: a semente 5 dá **R$ 884,20**, e não os R$ 884,19 da seção 3.3 do documento (que
-  somava sem arredondar por sessão): Ana Beatriz R$ 175,57 (energia 159,07) e Patrícia R$ 102,80
-  (energia 86,30); os demais usuários não mudam. O documento precisa ser atualizado.
+  Consequência: a semente 5 dá **R$ 885,70** (R$ 884,20 antes da regra da reserva vencida; o valor sem
+  arredondar por sessão seria R$ 884,19 + R$ 1,50): Ana Beatriz R$ 175,57 (energia 159,07) e Patrícia R$ 102,80
+  (energia 86,30); os demais usuários não mudam. O documento foi atualizado (`docs/ESPECIFICACAO_ARQUIVOS_USO.md`).
 - **Competência:** `Fatura.competencia` e `ResultadoRateio.competencia` (`AAAA-MM`), também na
   1ª coluna de `fatura_mensal.csv`. É o mês do início das sessões e reservas (sessão que vira o mês
   conta no mês em que começou). Dados de mais de um mês geram aviso. Pode ser informada:
