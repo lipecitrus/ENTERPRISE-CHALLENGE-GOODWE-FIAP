@@ -42,7 +42,7 @@ A pasta `uso_carregador` precisa existir para a fatura funcionar. Sem ela, o pro
 
 Os valores vêm de `config/parametros_rateio.csv` (lido por `carregar_parametros()`), sem números fixos no código.
 
-- **Agendamento:** início em hora cheia ou meia hora, duração em múltiplos de 30 minutos, antecedência mínima de 60 minutos e sem sobreposição com outra reserva ativa.
+- **Agendamento:** início em hora cheia ou meia hora, duração em múltiplos de 30 minutos (máximo de 120 minutos por reserva), antecedência mínima de 60 minutos e sem sobreposição com outra reserva ativa.
 - **Uso com reserva:** o carregador só é liberado para quem tem reserva ativa naquele horário, com tolerância de 30 minutos antes do início.
 - **Uso avulso:** permitido quando o ponto está livre e não há reserva de outro usuário em andamento. Taxa de R$ 1,50 por sessão. A identificação é por app ou RFID.
 - **Reserva não utilizada:** a reserva ativa que não teve liberação até 30 minutos depois do início passa a `nao_utilizado`. Taxa de R$ 5,00.

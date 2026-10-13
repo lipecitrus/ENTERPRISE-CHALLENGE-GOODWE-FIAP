@@ -1,303 +1,468 @@
 # ENTERPRISE CHALLENGE 2026 — GOODWE + FIAP
 
+**SPRINT 02: O desenvolvimento do projeto** 
+
 Grupo 11: Filipe Augusto Chaves (rm570827), Yury Alexander Tavares (rm572825), Murillo Gomes de Almeida (rm572196), Arthur Henrique Ruiz Ramos (rm568738)
 
-## DESCRIÇÃO DO PROBLEMA E DO CONTEXTO DO DESAFIO
+>Enterprise Challenge 2026  
+>Aplicação em Python para cadastro de moradores, reservas, registro de sessões de carregamento, rateio de custos, geração de faturas e análise com o uso de IA.
+
+
+## 1. Visão geral
+
+O EV ChargeOps é um protótipo de sistema para administrar a utilização compartilhada de carregadores de veículos elétricos em ambientes como condomínios, edifícios corporativos ou campus. O problema tratado é operacional: vários usuários compartilham uma quantidade limitada de carregadores, e o administrador precisa saber quem utilizou o equipamento, quando ocorreu a recarga, qual foi o consumo, se houve reserva e como distribuir os custos de forma rastreável.
+
+A solução combina uma aplicação de terminal, armazenamento simples em Excel, arquivos CSV de sessões de recarga, um leitor que normaliza os eventos, um módulo independente de rateio e uma camada experimental de análise com aprendizado de máquina.
+
+## 2. Relação com a Sprint 01 e justificativa dos desvios
+
+A pesquisa, a arquitetura e o modelo de rateio definidos na Sprint 01 estão em [`docs/README_SPRINT_1.md`](docs/README_SPRINT_1.md). Esta seção compara o que foi planejado lá com o que foi implementado e justifica cada mudança.
+
+### 2.1 O que foi implementado conforme o planejado
+
+| Planejado na Sprint 01 | Onde está na Sprint 02 |
+|---|---|
+| Registrar sessões de recarga por usuário (início, fim, duração, kWh) | `leitor_uso.py` reconstrói as sessões a partir dos eventos e leituras do carregador |
+| Calcular o consumo individual por unidade/apartamento e do condomínio como um todo | `src/rateio/fatura.py` agrega por usuário/unidade; `fatura_mensal.csv` traz o total geral |
+| Rateio com cobrança por horário de uso (adicional no horário de pico) | Faixas fora de ponta, intermediária e ponta em `src/rateio/regras.py`, com valores em `config/parametros_rateio.csv` |
+| Rateio considerando o agendamento da recarga | Taxa de sessão sem reserva e taxa de no-show/cancelamento tardio |
+| Custo fixo por unidade (atributo `custo_fixo` da entidade Unidade) | Custo fixo mensal de R$ 15,00 por unidade |
+| "Definição arbitrária dos valores unitários por margens de horário" (plano da Sprint 02) | Tarifas de demonstração parametrizadas em CSV, fora do código |
+| "Desenvolver um aplicativo de agendamento dos pontos de recarga" (plano da Sprint 02) | `main.py`: cadastro, login, reservas em blocos de 30 minutos, cancelamento, liberação do carregador e painel do gestor |
+| "IA na previsão de anomalias e de uso" (camada de aplicação) | `ia_uso.py`: detecção de anomalias (`IsolationForest` + regras) e previsão de consumo diário (`RandomForestRegressor`) |
+
+### 2.2 Desvios em relação à Sprint 01
+
+| Aspecto | Planejado na Sprint 01 | Implementado na Sprint 02 | Justificativa |
+|---|---|---|---|
+| Fonte dos dados | Dados do HCA G2 lidos via OCPP/MODBUS e organizados pela API SEMS da GoodWe | CSVs simulados por `gerar_uso_carregador.py`, no formato de eventos de um carregador (início, leituras do medidor, `CarroCheio`, fim, reservas) | Não houve acesso a dados reais do carregador nem à API SEMS durante a sprint, e a estrutura de dados GoodWe disponível como referência é voltada a inversores e armazenamento de energia: não traz sessões de recarga, identificação do usuário, reservas nem fila. O simulador reproduz os eventos que o HCA G2 gera via OCPP/MODBUS (por exemplo, `CarroCheio` equivale ao `SuspendedEV` do OCPP), e a especificação em [`docs/ESPECIFICACAO_ARQUIVOS_USO.md`](docs/ESPECIFICACAO_ARQUIVOS_USO.md) indica como mapear uma exportação real do SEMS+ para as mesmas colunas. Com isso, o leitor, o rateio e a IA não precisam mudar quando houver dados reais. |
+| Cobrança por tempo | "Cobrança adicional a cada 30 minutos" de tempo de carregamento | Cobrança de R$ 2,00 por bloco de 30 minutos de **ociosidade** (veículo conectado depois de a carga terminar), com 15 minutos de carência, só quando há outro usuário na fila e com teto de R$ 20,00 por sessão | Durante o carregamento, o usuário já paga pela energia em kWh; cobrar também pelo tempo de carga penalizaria duas vezes quem tem um veículo que carrega mais devagar. O problema operacional real é o veículo que termina de carregar e continua ocupando o ponto enquanto outro morador espera. A regra de ociosidade ataca esse comportamento sem encarecer a recarga em si. |
+| Interface | "Interface gráfica amigável para usuários e gestores" | Aplicação de terminal (`main.py`) | O foco da sprint foi a lógica de sessões, rateio e IA, que é o núcleo exigido do protótipo. Uma interface de terminal permitiu demonstrar o fluxo completo (cadastro, reserva, liberação, fatura e painel do gestor) sem depender de servidor web ou framework gráfico. As funções de cálculo ficam em módulos separados (`src/rateio/`, `ia_uso.py`) e podem ser reaproveitadas por uma interface gráfica no futuro. |
+| Persistência | Banco de dados com usuários, unidades, carregadores, sessões e faturas | Excel (`ev_chargeops.xlsx`) para os dados do aplicativo; CSVs para a telemetria; CSV/Excel para as faturas | Excel e CSV são fáceis de inspecionar e não exigem instalar um servidor de banco de dados para avaliar o protótipo. A limitação está registrada na seção 12. |
+| Modelo de dados | Entidades Usuário, Unidade, Carregador, Veículo, Sessão e Fatura | Abas `usuarios`, `agendamentos` e `liberacoes` no aplicativo; veículo, sessão e leituras nos CSVs de uso; fatura e detalhe por sessão nas saídas do rateio | **Agendamento** foi acrescentado porque o modelo de rateio depende de reservas (sessão sem reserva, no-show, cancelamento tardio). **Carregador** não virou tabela porque o protótipo simula um único ponto de recarga (o HCA G2 do Energy Innovation Lab). **Unidade** é representada pelo campo `unidade_id` do usuário, já que cada unidade tem um único cadastro. **Veículo** aparece nos dados de uso de cada usuário, mas não é cadastrado no aplicativo, pois não influencia o valor cobrado. |
+| Fluxo sessão → fatura | Eventos salvos no perfil do usuário na API SEMS e cobrança gerada a partir deles | O aplicativo e os CSVs de uso são fontes separadas: reservas feitas no menu não alteram os CSVs usados no rateio | Sem acesso ao carregador real, não é possível gerar leituras de medidor a partir de uma liberação feita no menu. A separação foi mantida explícita, e o painel do gestor e a fatura usam o mesmo cálculo de `src/rateio/`. |
+
+## 3. Funcionalidades
+
+### Morador
+
+- Cadastro com nome, CPF, unidade e senha.
+- Login usando CPF e senha.
+- Consulta e cancelamento de agendamentos.
+- Criação de reservas em blocos de 30 minutos, com duração máxima de 120 minutos, respeitando as regras configuradas.
+- Início e encerramento de utilização do carregador no protótipo.
+- Consulta da fatura mensal associada aos registros disponíveis.
+
+### Gestor
+
+- Acesso a um painel administrativo protegido por senha definida no primeiro acesso.
+- Consulta do resumo de rateio.
+- Visualização dos registros de liberações e reservas.
+- Exportação da fatura em formato Excel com abas `faturas` e `detalhe`.
+
+### Processamento de dados
+
+- Geração de CSVs sintéticos de utilização.
+- Leitura e reconstrução de sessões a partir dos eventos e leituras dos CSVs.
+- Validação de dados e emissão de avisos.
+- Cálculo parametrizado de energia, ociosidade, uso sem reserva, no-show e custo fixo.
+- Exportação do rateio em CSV e avisos em texto.
+
+### IA experimental
+
+- Sinalização de sessões estatisticamente atípicas e de problemas detectáveis por regras simples.
+- Previsão exploratória do consumo diário para os próximos dias.
+- Exportação de relatório próprio, sem modificar as faturas ou os dados de entrada.
+
+## 4. Arquitetura
+
+O projeto é dividido por responsabilidades, ainda que a interface de operação seja uma aplicação de terminal.
+
+```text
+Usuário / Gestor
+       |
+       v
+    main.py ----------------------> ev_chargeops.xlsx
+       |                            (cadastros, reservas,
+       |                             liberações e configuração)
+       |
+       +-------------------------------+
+                                       |
+Gerador de dados                      | CSVs de uso
+gerar_uso_carregador.py --------------> uso_carregador/*.csv
+                                       |
+                                       v
+                                  leitor_uso.py
+                                  (UsoSource)
+                                       |
+                       +---------------+----------------+
+                       |                                |
+                       v                                v
+                src/rateio/                         ia_uso.py
+             validação e cobrança             anomalias e previsão
+                       |                                |
+                       v                                v
+                 fatura_saida/                    fatura_saida/
+             CSVs, avisos e Excel                 relatorio_ia.csv
+```
+
+### Principais módulos
+
+- **`main.py`** — interface de terminal, cadastro, autenticação, reservas, liberação do carregador, consulta de fatura e ações do gestor. Usa pandas para ler e gravar o Excel do aplicativo.
+- **`gerar_uso_carregador.py`** — cria cenários sintéticos e escreve arquivos CSV de eventos/leituras. Por padrão, cria `uso_carregador/` ao lado do próprio script.
+- **`leitor_uso.py`** — contém o contrato de dados e `UsoSource`, responsável por interpretar CSVs, normalizar campos e reconstruir usuários, sessões, leituras e eventos de reserva. Também pode ser executado diretamente para exibir um resumo.
+- **`src/rateio/contrato.py`** — expõe os tipos e contratos utilizados pelo leitor e pelo rateio.
+- **`src/rateio/validacoes.py`** — executa verificações de consistência, continuidade de leituras e condições relacionadas às reservas.
+- **`src/rateio/parametros.py`** — carrega tarifas e taxas de `config/parametros_rateio.csv`, aceitando substituições locais na pasta de uso.
+- **`src/rateio/regras.py`** — implementa funções específicas para faixas tarifárias, custo de energia, ociosidade, uso sem reserva e no-show.
+- **`src/rateio/fatura.py`** — coordena o cálculo das cobranças e agrega os resultados por usuário/unidade e sessão.
+- **`src/rateio/saida.py`** — grava a fatura mensal, o detalhamento e os avisos.
+- **`calcular_fatura.py`** — ponto de entrada por linha de comando para executar o rateio.
+- **`ia_uso.py`** — camada analítica experimental que reutiliza o leitor para detectar anomalias e prever consumo diário.
+- **`tests/`** — testes automatizados das regras de rateio e das funcionalidades da IA.
+
+### Fluxo de dados
+
+1. O gerador produz os CSVs específicos do cenário veicular.
+2. O leitor percorre os arquivos da pasta indicada e reconstrói as sessões.
+3. O rateio valida os registros, carrega os parâmetros e calcula as cobranças.
+4. A camada de saída grava arquivos auditáveis para conferência.
+5. Opcionalmente, o módulo de IA analisa as sessões e produz um relatório separado.
+
+A IA não participa do cálculo da fatura oficial. Isso evita que uma estimativa ou um alerta probabilístico altere diretamente valores cobrados.
+
+## 5. Estrutura de diretórios
+
+```text
+ENTERPRISE-CHALLENGE-GOODWE-FIAP/
+├── README.md                    # este documento (Sprint 02)
+├── requirements.txt             # dependências do projeto
+├── main.py                      # aplicação de terminal (morador e gestor)
+├── gerar_uso_carregador.py      # gerador dos CSVs de uso do carregador
+├── leitor_uso.py                # leitura e reconstrução das sessões
+├── calcular_fatura.py           # linha de comando do rateio
+├── ia_uso.py                    # detecção de anomalias e previsão de uso
+├── config/
+│   └── parametros_rateio.csv    # tarifas e taxas
+├── src/
+│   └── rateio/
+│       ├── __init__.py
+│       ├── __main__.py
+│       ├── contrato.py
+│       ├── fatura.py
+│       ├── parametros.py
+│       ├── regras.py
+│       ├── saida.py
+│       ├── validacoes.py
+│       └── README.md
+├── tests/
+│   ├── test_rateio.py
+│   ├── test_ia_uso.py
+│   └── test_main.py
+├── docs/
+│   ├── README_SPRINT_1.md           # pesquisa e planejamento da Sprint 01
+│   ├── DOCUMENTACAO_TECNICA.md      # arquitetura e regras em detalhe
+│   ├── ESPECIFICACAO_ARQUIVOS_USO.md# colunas e eventos dos CSVs de uso
+│   ├── INTERFACE_TERMINAL.md        # menus e regras da aplicação de terminal
+│   └── MODULO_IA.md                 # módulo de IA em detalhe
+├── evidencias/                  # evidências de funcionamento (ver seção 14)
+├── uso_carregador/              # criado pelo gerador; contém os CSVs de entrada
+├── fatura_saida/                # criada durante a geração de relatórios
+└── ev_chargeops.xlsx            # criado pelo main.py no primeiro uso
+```
+
+`uso_carregador/`, `fatura_saida/` e `ev_chargeops.xlsx` são gerados durante a execução e não ficam versionados no repositório. O arquivo `ev_chargeops.xlsx` armazena os dados da interface do aplicativo (cadastros, reservas, liberações e a senha do gestor, definida no primeiro acesso ao painel); ele não substitui os CSVs usados pelo módulo de rateio.
 
-### Contexto
+### Documentação complementar
+
+- [`docs/README_SPRINT_1.md`](docs/README_SPRINT_1.md) — pesquisa das três frentes, arquitetura e modelo de rateio definidos na Sprint 01.
+- [`docs/DOCUMENTACAO_TECNICA.md`](docs/DOCUMENTACAO_TECNICA.md) — arquitetura, fluxo de dados e regras de cobrança em detalhe.
+- [`docs/ESPECIFICACAO_ARQUIVOS_USO.md`](docs/ESPECIFICACAO_ARQUIVOS_USO.md) — formato dos CSVs de uso do carregador.
+- [`docs/INTERFACE_TERMINAL.md`](docs/INTERFACE_TERMINAL.md) — menus, regras de agendamento e roteiro de teste da aplicação.
+- [`docs/MODULO_IA.md`](docs/MODULO_IA.md) — funcionamento e limitações do módulo de IA.
+- [`src/rateio/README.md`](src/rateio/README.md) — organização interna do pacote de rateio.
 
-A GoodWe, fabricante global de inversores e sistemas de armazenamento de energia (presença em mais de 100 países, 100GW+ de capacidade instalada).
+## 6. Requisitos e instalação
 
-O cenário de fundo é o crescimento acelerado da frota de veículos elétricos, que está pressionando infraestruturas de recarga compartilhadas — condomínios residenciais, edifícios corporativos e campus universitários — a lidar com múltiplos usuários disputando um número limitado de pontos de carga.
+- Python 3.10 ou superior recomendado.
+- Dependências: `pandas` e `openpyxl` (aplicativo e rateio) e `scikit-learn` (módulo de IA), todas listadas em `requirements.txt`.
 
-### O Problema Central
+Abra um terminal na raiz do projeto, onde estão `main.py` e `gerar_uso_carregador.py`, e instale as dependências:
 
-Essas infraestruturas compartilhadas não possuem mecanismos integrados para:
+```bash
+python -m pip install -r requirements.txt
+```
 
-- Estruturar sessões por usuário — não há um registro organizado de quem carregou, quando e por quanto tempo.
-- Calcular consumo individual — falta apuração precisa de quantos kWh cada usuário efetivamente consumiu.
-- Aplicar regras de rateio justas — sem dados estruturados, a divisão de custos de energia entre moradores/usuários tende a ser genérica ou arbitrária, gerando potenciais conflitos.
-- Oferecer uma experiência digital clara — tanto para o usuário final (morador) quanto para o gestor (condomínio, empresa, campus), falta uma interface que traduza os dados em informação compreensível.
+A opção de IA no painel do gestor importa o módulo sob demanda: se o `scikit-learn` não estiver instalado, cadastro, reservas e rateio continuam funcionando e apenas a análise de IA fica indisponível.
 
-Ou seja, o problema não é técnico no sentido de "o carregador não funciona", é um problema de gestão de dados e governança de uso compartilhado de um recurso físico.
+> No Windows, se `python` não estiver associado à versão instalada, tente usar `py` no lugar do comando `python`.
 
-### Oportunidade
+## 7. Execução passo a passo
 
-Cada sessão de recarga já gera dados ricos e mensuráveis:
+### 7.1 Gerar os CSVs de utilização
 
-- Duração da sessão
-- Volume de energia entregue (kWh)
-- Horário de uso
-- Frequência de utilização
-- Picos de demanda
-- Intervalos de ociosidade do equipamento
+```bash
+python gerar_uso_carregador.py --seed 5
+```
 
-O texto aponta que esses dados, hoje provavelmente subutilizados ou dispersos, podem se transformar em inteligência operacional quando organizados, processados e analisados de forma estruturada.
+Por padrão, o gerador grava os CSVs em `uso_carregador/`, uma subpasta ao lado do próprio script. O parâmetro `--seed 5` torna a geração reproduzível: executar novamente com a mesma semente e os mesmos parâmetros produz o mesmo cenário sintético.
 
-### Proposta de Solução
+Opções úteis:
 
-Surge como resposta a esse problema, propondo usar inteligência artificial como motor lógico para:
+```bash
+python gerar_uso_carregador.py --help
+python gerar_uso_carregador.py --mes 2026-09 --seed 5
+python gerar_uso_carregador.py --seed 5 --anomalias
+python gerar_uso_carregador.py --seed 5 --saida dados_teste
+```
 
-- Transformar dados brutos de sessões de recarga em informação útil;
-- Automatizar o cálculo de consumo individual;
-- Viabilizar rateios mais justos e transparentes;
-- Entregar uma camada digital de gestão e visualização tanto para usuários quanto para administradores da infraestrutura.
+- `--mes AAAA-MM`: competência dos dados; o padrão atual é `2026-09`.
+- `--seed N`: fixa a semente aleatória para reproduzir o cenário.
+- `--anomalias`: injeta problemas de dados para testar as validações e os alertas.
+- `--saida CAMINHO`: define a pasta de saída. Se for utilizado, os comandos seguintes devem apontar para essa pasta.
 
-## RESULTADO DAS TRÊS FRENTES DE PESQUISA
+### 7.2 Executar o leitor isoladamente
 
-### FRENTE 1
+```bash
+python leitor_uso.py
+```
 
-**O que são infraestruturas de recarga compartilhada e quais são os principais desafios operacionais enfrentados por gestores de condomínios, edifícios corporativos ou campus universitários?**
+O leitor utiliza `uso_carregador/` por padrão e exibe arquivos lidos, sessões por usuário, consumo em kWh, reservas e avisos.
 
-As infraestruturas de recarga compartilhada são estações destinada ao carregamento de veículos elétricos projetadas para serem utilizadas por múltiplos usuários ou moradores. Dentro de instalações como empresas, condomínios, moradias ou universidades, há a estação física, concedendo a recarga da bateria do veículo. Estas estações possuem, por sua vez, um sistema de gerenciamento inteligente na qual atua na distribuição de energia de maneira consciente entre os dispositivos e métodos de cobrança por consumo.
+Para indicar outra pasta:
 
-Apesar da implementação nos espaços públicos, é possível identificar a existência de problemas relacionados a distribuição energética das estações perante seus dispositivos. A instalação de várias unidades físicas de carregadores para o usuário pode exigir uma alta demanda elétrica, especialmente em horários de maior necessidade de utilização. Sem a gestão deste item, o sistema elétrico do edifício pode sobrecarregar e gerar um colapso na rede de energia.
+```bash
+python leitor_uso.py dados_teste
+```
 
-Outro desafio enfrentado perante a infraestrutura de recarga compartilhada diz respeito às políticas internas e regras operacionais das instituições possuidoras das estações. É necessária uma administração relacionada aos acessos, reservas, tempo de permanência, prioridade de carregamento e liberação dos dispositivos após o uso para outrem. A ausência destas regras pode gerar frustração e conflitos ao usuário.
+### 7.3 Calcular o rateio e gerar os arquivos financeiros
 
-A confiabilidade dos dispositivos é trivial diante a operação do dispositivo já que os equipamentos estão sujeitos a falhas elétricas, comunicativas, deterioração física e interrupção da rede. Desta forma, é necessário a implementação de estratégias  relacionadas  a  manutenção  como  a  manutenção  preventiva, monitoramento remoto das estações, sistemas inteligentes capazes de indicarem desempenho e taxa mo s de falhas.
+```bash
+python calcular_fatura.py
+```
 
-Além dos aspectos técnicos, existe o desafio relacionado ao modelo de gestão econômica da infraestrutura. O administrador deve definir como os custos de energia, manutenção e operação serão distribuídos entre os usuários, considerando alternativas como cobrança individual, assinatura, rateio coletivo ou fornecimento gratuito.
+O comando utiliza `uso_carregador/` como entrada e `fatura_saida/` como saída. É possível informar ambos os caminhos:
 
-Há a exigência normativa relacionada ao projeto de instalação dos equipamentos, de forma que se exige projetos elétricos - desenho técnico que define cálculos de dimensões, medições específicas, materiais necessários para execução da atividade, para a implementação física do dispositivo -, projeto executivo – documentos relacionados entre condomínio e/ou moradia e concessionária de energia.
+```bash
+python calcular_fatura.py dados_teste resultado_teste
+```
 
-Além dos desafios técnicos e operacionais, existe, por fim, o problema referente a gestão econômica relacionada a cobrança após a utilização da recarga no veículo elétrico. A administração deve definir como os custos de utilização do dispositivo - tempo, intensidade de energia utilizada etc. - manutenção preventiva, a energia fornecida pela concessionária e operação serão distribuídos aos consumidores, considerando modelos de cobrança individuais.
+Alternativamente, o módulo pode ser executado como pacote:
 
-**Como funciona uma sessão de recarga do ponto de vista técnico: o que acontece entre o momento em que o veículo é conectado e o encerramento da sessão, quais dados são gerados e como podem ser capturados;**
+```bash
+python -m src.rateio
+```
 
-Em uma sessão de recarga de um veículo elétrico, há uma série de dados compartilhados entre o veículo elétrico para o carregado e sistema de gestão em nuvem. Esta atividade ocorre por meio de dois padrões técnicos operacionais: a comunicação entre o veículo e o carregador físico - padrão normativo ISO 15118 – e a intercomunicação entre carregador e servidores externos - padrão OCPP (Protocolo de Ponto de Carga Aberto). Após a conexão física entre o carregador e o veículo elétrico, inicia-se uma comunicação contínua entre: VE – Unidade de Recarga Elétrica – Servidor Externo (gerenciamento).
+### 7.4 Iniciar a aplicação interativa
 
-O processo inicia quando o usuário conecta o cabo de carregamento ao veículo e ao equipamento de recarga. O carregador realiza uma verificação inicial da conexão elétrica e estabelece comunicação com o sistema eletrônico do veículo.
+```bash
+python main.py
+```
 
-Neste estágio, são analisados parâmetros para autenticação e autorização para início da recarga. De um lado, o usuário pode realizar a liberação através de uma tag RFID, aplicativo externo correspondente ao carregador, leitura via QR Code ou cadastro interno no sistema do edifício. Em seguida, feita a liberação, começa-se o processo de recarga do veículo elétrico.
+No menu inicial, as opções são entrar como morador, cadastrar-se ou acessar o painel do gestor. Para uma demonstração completa, gere primeiro os CSVs, pois a consulta de fatura depende de registros de uso disponíveis.
 
-Durante o processo de recarga, devido a conexão estabelecida, ocorre o processo de gerenciamento inteligente (Smart Charging) das variáveis elétricas e operacionais apresentadas pelo veículo, como nível atual da bateria, tempo limite de partida, duração da sessão, temperatura dos componentes, potência e corrente fornecidas, condições de segurança e comunicação entre sistemas. A estação analisa essas informações com base nos limites da rede local, prioridades tarifárias e converte a energia (de Corrente Alternada - CA para Corrente Contínua - CC, se for um carregador rápido)
+**Importante:** o fluxo de cadastro/reserva/liberação da aplicação e o conjunto sintético de CSVs são fontes distintas no protótipo. Criar uma reserva no menu não reescreve automaticamente os CSVs sintéticos nem garante que aquela reserva seja refletida no cálculo do rateio. Para uma demonstração financeira consistente, utilize o conjunto de CSVs gerado e confira os avisos do leitor.
 
-Quando finalizado o processo (seja por carregamento 100% concluído ou por interrupção externa – falha do equipamento ou interrupção manual.), ocorre o registro detalhado da atividade da recarga, contendo:
+### 7.5 Executar a análise de IA
 
-- Identificação do usuário;
-- Identificação do carregador utilizado;
-- Data e horário de início;
-- Data e horário de término;
-- Duração total da sessão;
-- Energia consumida em kWh;
-- Potência média e máxima utilizada;
-- Custo associado à recarga;
-- Eventos de falha ou interrupção.
+```bash
+python ia_uso.py
+```
 
-A coleta destes dados é essencial, tendo em vista que contém todo o histórico da recarga, facilitando a gestão operacional, técnica e financeira dentro da instalação fornecedora do serviço.
+Parâmetros posicionais opcionais: pasta de entrada, pasta de saída e quantidade de dias previstos.
 
-**Quais modelos de negócio existem para recarga compartilhada no Brasil e no mundo: recarga gratuita, cobrança por kWh, cobrança por tempo, assinatura mensal ou rateio condominial.**
+```bash
+python ia_uso.py uso_carregador fatura_saida 14
+```
 
-O modelo de negócio referente ao sistema de recarga compartilhada baseia-se na utilização e monetização da infraestrutura, contando com fatores de cobrança dentro dos espaços que fornecem o serviço ao consumidor. Portanto, existem modelos de precificação relacionados a operação do equipamento.
+O exemplo lê `uso_carregador/`, grava em `fatura_saida/` e solicita previsão para 14 dias.
 
-**Modelo de Recarga Gratuita (Subsidiado):**
-Esta aplicação concede ao consumidor o serviço de recarga do veículo elétrico sem a cobrança e/ou precificação pela utilização. Este modelo é utilizado por espaços como shoppings, hotéis, universidade e condomínio. Os custos perante manutenção, energia concedida e operação são de responsabilidade da organização e/ou parceria comercial do empreendimento.
+### 7.6 Executar os testes
 
-**Modelo de Cobrança por Energia Consumida (R$/kWh):**
-Neste modelo a precificação está diretamente relacionada ao consumo de energia elétrica utilizada na operação de recarga.
+```bash
+python -m unittest discover -s tests -v
+```
 
-**Modelo de Utilização por Tempo (R$/Hrs):**
-Neste modelo, monetiza-se o tempo de consumo do serviço, independente da intensidade de energia durante a sessão.
+Execute a partir da raiz do projeto. Os testes verificam as regras do rateio e os cenários principais da IA.
 
-**Modelo de Cobrança por Plano:**
-O consumidor filiado ao espaço que fornece o serviço de recarga compartilhada tem o desconto de um valor fixo, já que possuem este vínculo através de um plano ou franquia (para veículos elétricos em frota). Desta forma, ocorre a previsibilidade de custo por operação para o usuário.
+## 8. Modelo de dados e arquivos gerados
 
-**Modelo de Rateio Condominial:**
-Perante a prestação do sistema de carregamento compartilhado pelo condomínio residencial, é possível que a gestão financeira utilize o rateio na precificação da atividade do equipamento através de softwares de controle de consumo dos moradores e consumidores do serviço. Ademais, é possível que ocorra a cobrança individualizada do consumo, garantindo maior transparência perante os procedimentos de cobrança.
+### Arquivo do aplicativo: `ev_chargeops.xlsx`
 
-**Opção de Aprofundamento C — Análise de dados públicos: pesquise e análise dados sobre o crescimento da frota de veículos elétricos no Brasil, distribuição de pontos de recarga e perfis de uso.**
-
-Segundo o site Monitor Mercantil, venda de carros eletrificados dispara e cresce 65,5% em 2026. O segmento de híbridos e elétricos alcança 15,9% de participação. Com um crescimento expressivo de 65,5% nos dois primeiros meses de 2026, o segmento de veículos eletrificados atingiu a marca de 55.961 unidades emplacadas no Brasil. O balanço, divulgado pela Associação Nacional dos Fabricantes de Veículos Automotores (Anfavea), confirma que a eletromobilidade deixou de ser uma tendência de nicho para se tornar o motor de crescimento do mercado brasileiro.
-
-O site Smabc nos traz a informação de que Brasil chega a 25 mil eletropostos, sendo 33% de carga rápida. A infraestrutura de recarga para veículos elétricos cresceu pouco mais de 20% em três meses. O país alcançou 25.455 pontos públicos e semipúblicos de recarga em maio de 2026, crescimento de 20,9% em relação a fevereiro — data do último levantamento —, quando a rede contava com 21.060 equipamentos.
-
-O principal destaque do levantamento divulgado pela Tupi, plataforma de mobilidade elétrica, em parceria com a Associação Brasileira do Veículo Elétrico (ABVE), foi o avanço da recarga rápida. Em apenas três meses, o número de carregadores DC passou de 6.479 para 8.606 unidades, crescimento de 32,8%. Com isso, a participação da recarga rápida na infraestrutura nacional aumentou de 30,8% para 33,8%.
-
-Já os carregadores lentos (AC) cresceram 15,5% no período, passando de 14.582 para 16.836 equipamentos. Segundo a ABVE e a Tupi, o resultado mostra que o mercado brasileiro entrou em uma nova fase de expansão da infraestrutura, impulsionada tanto pela ampliação dos eletropostos quanto pelo avanço dos carregadores ultrarrápidos.
-
-Outro dado que chamou atenção no levantamento foi a retomada do crescimento dos carregadores lentos (AC). De acordo com a ABVE e a Tupi, a reação coincide com a entrada em vigor da Lei 18.403/2026, sancionada em São Paulo, que garante aos moradores o direito de instalar carregadores em vagas privativas de condomínios. Outros estados também consolidaram normativas sobre o tema na sequência, e ampliaram a discussão para todo o território nacional.
-
-Os usuários desse tipo de veículo são associados normalmente a perfis de consumo de conectividade, tecnologia e inovação, além de terem uma relação com a busca por sustentabilidade e maneiras alternativas de mobilidade. O entusiasmo para a utilização de veículos elétricos cresceu significantemente no ambiente dos motoristas de aplicativo, fator este apresentado devido a redução do custo de reabastecimento e a menor necessidade de reparos mecânicos.
-
-Além disso, estes veículos apresentam redução de emissão dos gases poluentes, trazendo uma alternativa mais sustentável para o cotidiano. Por fim, é notável a predominância da utilização dos veículos elétricos no centro urbano, já que traz ao consumidor a mais atual tecnologia, desde o próprio carro em si, até as estações de recarga compartilhada que crescem fortemente no Brasil, apresentando uma gestão mais inteligente de energia, operação e sustentabilidade.
-
-### FRENTE 2
-
-**Resolução Normativa ANEEL nº 1000 (e suas alterações subsequentes)**
-
-**Objeto e Abrangência**
-Regula os direitos e deveres de consumidores e distribuidoras de energia elétrica, aplicando-se a concessionárias, permissionárias e todos os usuários do sistema de distribuição.
-
-**Conexão ao Sistema**
-- A conexão é um direito do consumidor, podendo ser permanente ou temporária.
-- A distribuidora é obrigada a fornecer orçamentos gratuitos e realizar obras nos prazos regulamentados.
-- Conexões até 50 kW em baixa tensão são gratuitas para consumidores de baixa renda.
-- Há regras específicas para microgeração e minigeração distribuída (painéis solares, etc.).
-
-**Contratos**
-- Grupo B (baixa tensão): contrato de adesão por prazo indeterminado.
-- Grupo A (alta tensão): CUSD e CCER com vigência de 12 meses, prorrogáveis automaticamente.
-- Consumidores do Grupo A podem migrar para o Mercado Livre (ACL).
-
-**Tarifas e Benefícios**
-- Tarifa Social (TSEE): para famílias inscritas no CadÚnico com renda de até meio salário mínimo per capita, com descontos progressivos no consumo.
-- Residencial Desconto Social: para famílias com renda entre meio e um salário mínimo per capita.
-- Classes tarifárias: residencial, industrial, comercial, rural, poder público, iluminação pública, serviço público e consumo próprio.
-- Benefícios para irrigação e aquicultura com reduções de até 90% nas tarifas.
-
-**Faturamento e Pagamento**
-- Leitura mensal obrigatória com ciclo de 27 a 33 dias.
-- Fatura deve conter todas as informações detalhadas de consumo, tarifas e tributos.
-- Vencimento mínimo de 5 dias úteis após apresentação da fatura.
-- Erros de faturamento a maior geram devolução em dobro corrigida pelo IPCA.
-
-**Suspensão e Religação**
-- Suspensão por inadimplemento exige notificação prévia de 15 dias.
-- Consumidores de baixa renda têm prazo mínimo de 30 dias entre vencimento e suspensão.
-- Religação em caso de suspensão indevida deve ocorrer em 4 horas.
-- Suspensão vedada às sextas, sábados, domingos, vésperas e feriados.
-
-**Microgeração e Minigeração Distribuída (SCEE)**
-- Sistema de Compensação de Energia Elétrica permite que excedentes gerados (ex.: solar) sejam compensados na fatura.
-- Créditos de energia têm validade de 60 meses.
-- Regras de transição até 2045 para quem instalou painéis antes de janeiro de 2022.
-- Minigeradores acima de 500 kW devem apresentar garantia de fiel cumprimento.
+O arquivo é lido e gravado por `main.py` e contém as abas:
 
-**Qualidade do Serviço**
-- Indicadores de continuidade (frequência e duração de interrupções) com limites regulados.
-- Descumprimento de prazos gera compensação financeira automática ao consumidor.
-- Distribuidora deve avisar interrupções programadas com antecedência mínima de 72 horas (até 5 dias para consumidores especiais).
+- **`usuarios`** — CPF, identificador interno, nome, unidade e valor de verificação da senha.
+- **`agendamentos`** — identificador da reserva, usuário, início, fim, status e indicador de cancelamento tardio.
+- **`liberacoes`** — registro de utilização/liberação do carregador, identificação, reserva associada e horários.
+- **`config`** — estrutura reservada a parâmetros do aplicativo.
 
-**Atendimento ao Consumidor**
-- Canais obrigatórios: presencial, telefônico 24h, internet e plataforma Consumidor.gov.br.
-- Reclamações devem ser resolvidas em até 5 dias úteis (ou 10 dias com visita técnica).
-- Tempo de espera no atendimento presencial: máximo 30 minutos.
-- Concessionárias com mais de 60.000 consumidores devem ter Ouvidoria própria.
+O projeto usa Excel para simplificar a demonstração acadêmica; não é um banco de dados transacional multiusuário.
 
-**Ressarcimento de Danos Elétricos**
-- Aplica-se exclusivamente ao Grupo B (baixa tensão).
-- Prazo para solicitar ressarcimento: 5 anos da ocorrência.
-- Distribuidora deve responder em 15 a 30 dias e ressarcir em até 20 dias após o deferimento.
-- Responsabilidade objetiva da distribuidora (independe de dolo ou culpa).
+### CSVs de entrada: `uso_carregador/`
 
-**Iluminação Pública**
-- Responsabilidade de operação e manutenção é do poder público municipal.
-- Distribuidora realiza a medição e faturamento dos pontos de iluminação.
-- Arrecadação da CIP (Contribuição de Iluminação Pública) é feita pela distribuidora na fatura.
+O gerador cria arquivos `uso_*.csv`, normalmente um arquivo por perfil/usuário e, quando aplicável, um arquivo de sessões não identificadas. Os registros descrevem eventos e leituras ao longo do tempo. `leitor_uso.py` é responsável por interpretar esses arquivos; portanto, o rateio e a IA devem utilizar o mesmo formato reconhecido pelo leitor.
 
-**Aprofundamento Frente 2 - Opção A — Mapeamento regulatório completo.**
+Para a especificação detalhada das colunas, consulte [`docs/ESPECIFICACAO_ARQUIVOS_USO.md`](docs/ESPECIFICACAO_ARQUIVOS_USO.md).
 
-  Para a cidade de São Paulo especificamente, não encontrei uma lei municipal própria sobre carregadores de VE, o que está regendo o tema é a Lei Estadual nº 18.403/2026, que se aplica a todo o território do Estado, incluindo a capital. Segue os principais pontos específicos relevantes para SP: 
-  1- O Artigo 1º assegura ao condômino o direito de instalar, às suas expensas, estação de recarga individual em sua vaga de garagem privativa, desde que respeitadas as normas técnicas e de segurança vigentes, exigindo:
-  - compatibilidade com a carga elétrica da unidade;
-  - conformidade com as normas da distribuidora local e da ABNT;
-  - instalação por profissional habilitado com ART/RRT;
-  - comunicação formal prévia ao condomínio.
+### Saídas do rateio: `fatura_saida/`
 
-2- O Artigo 2º exige que empreendimentos imobiliários com projeto aprovado após a vigência da lei prevejam, em seus sistemas elétricos, capacidade mínima de suporte para instalação futura de carregadores — mas a regulamentação técnica desse requisito ainda depende de ato do Poder Executivo, ou seja, ainda não está definida na prática. 
+- **`fatura_mensal.csv`** — totais agregados por usuário/unidade e competência, incluindo consumo por faixa horária e categorias de cobrança.
+- **`detalhe_sessoes.csv`** — detalhamento por sessão e por cobrança, para rastrear a formação do total.
+- **`avisos.txt`** — avisos de validação, inconsistências e casos que exigem conferência.
+- **`fatura_mensal.xlsx`** — arquivo Excel exportado pelo painel do gestor, com abas `faturas` e `detalhe`.
+- **`relatorio_ia.csv`** — relatório da execução de `ia_uso.py`, separado das faturas oficiais.
 
-3- Quanto ao Corpo de Bombeiros (CBPMESP): Ponto crítico, ainda incompleto:
-  - Desde maio de 2024 o Secovi-SP atua junto ao Corpo de Bombeiros do Estado de São Paulo no debate técnico sobre os requisitos de segurança aplicáveis à instalação de estações de recarga em edificações, e a     regulamentação dessas exigências (Instrução Técnica, dentro da Diretriz Nacional SAVE) ainda está em fase de elaboração/consulta pública.
-  - O superintendente do Comitê Brasileiro de Segurança contra Incêndio (CB 024) da ABNT defendeu que o problema de segurança está nas garagens, não nos veículos elétricos em si — e que são necessários sistemas de detecção de incêndio, sprinklers, extração de fumaça e proteção estrutural, independentemente do tipo de veículo estacionado.
-  - Representante do Secovi-SP criticou a falta desses detalhes na lei recémsancionada, e apontou que as diretrizes do Corpo de Bombeiros ainda não são uma Norma nem Legislação, mas devem virar Lei ao longo dos próximos anos.
-  - O Secovi-SP, inclusive, publicou um comunicado específico sobre as diretrizes do Corpo de Bombeiros para instalações SAVE em condomínios.
-  
-4- Procedimento recomendado pela OAB para instalação em condomínio em SP
-  - O Secovi-SP recomenda que administradoras exijam, antes da autorização, análise técnica formal subscrita por profissional habilitado e custeada pelo condômino interessado, avaliando a compatibilidade da       infraestrutura elétrica global do edifício e os reflexos na segurança contra incêndio.
-  
-5- Em resumo, as principais documentações para uma instalação do HCA G2 na cidade de São Paulo são: 
-  - Lei 18.403/2026 (estadual) rege o direito à instalação, mas só cobre vagas de garagem "autônomas", não vagas em área comum vinculada à unidade.
-  - Não há ainda IT do Corpo de Bombeiros (CBPMESP) finalizada e específica para carregadores — está em construção desde 2024. Isso é uma zona cinzenta de risco regulatório no momento.
-  - Não foi identificado legislação municipal própria da cidade de São Paulo sobre o tema; o que existe é estadual.
-  - O Artigo 2º da lei estadual pode eventualmente impactar projetos novos (capacidade mínima de instalação elétrica), mas a regulamentação técnica ainda não foi publicada. 
-  
-  
-### FRENTE 3
+Os CSVs financeiros usam `;` como separador e vírgula como separador decimal. A saída da IA é gravada em UTF-8 com BOM para facilitar a abertura em ferramentas de planilha.
 
-**Quais são as camadas da plataforma EV ChargeOps**
+## 9. Regras de cobrança
 
-**Camada física**
-- EV Charger: linha HCA G2
-- Medidores (MODBUS): esses medidores são muito usados na indústria, pois é relativamente fácil de se implantar em sistemas, além de não ser necessário pagar taxas de licença por cada uso.
-- Controladores (OCPP): O protocolo de Ponto de Carregamento é um sistema central de gerenciamento de estações de recarga para veículos elétricos. O OCPP permite uma comunicação fluida entre carregadores e plataformas de gerenciamento, dessa forma é possível centralizar o monitoramento e o controle de carga.
+As regras são implementadas em `src/rateio/` e os parâmetros ficam em `config/parametros_rateio.csv`. Os valores abaixo são os padrões presentes no repositório; podem ser ajustados pelo arquivo de configuração.
 
-**Conectividade**
+| Componente | Regra padrão |
+|---|---|
+| Energia fora de ponta | R$ 0,85 por kWh |
+| Energia intermediária | R$ 1,20 por kWh |
+| Energia na ponta | R$ 1,70 por kWh |
+| Faixa de ponta | Dias úteis, horas configuradas como 18h, 19h e 20h |
+| Faixa intermediária | Dias úteis, horas configuradas como 17h e 21h |
+| Fins de semana e feriados listados | Fora de ponta durante todo o dia |
+| Ociosidade | 15 minutos de carência após o fim da carga; cobra-se cada bloco iniciado de 30 minutos a R$ 2,00, apenas quando há fila, limitado a R$ 20,00 por sessão |
+| Sessão sem reserva | R$ 1,50 por sessão avulsa |
+| No-show | R$ 5,00 por reserva não utilizada ou cancelamento tardio elegível |
+| Custo fixo | R$ 15,00 por mês por unidade |
 
-Uso de tecnologias para se conectar ao carregador e, assim, acessar o usuário:
+### Como o total é calculado
 
-1. RFID, tecnologia usada para identificar dados por meio de aproximação (bom para identificar o usuário que usará o posto de recarga)
-2. LAN, rede de área local é utilizado para troca rápida de informações entre computadores em um ambiente, pode ser por meio da tecnologia ethernet ou wi-fi (bom para troca de dados entre o posto de recarga e o servidor)
-3. Bluetooth, tecnologia usada para ligar aparelhos por meio de ondas de rádio de curto alcance (bom para fazer a ligação entre o dispositivo do usuário com o posto de recarga)
-4. API SEMS, esta API permite a interação do usuário com o posto de carregamento, assim se torna possível ter a leitura dos eventos ocorridos durante uma sessão de recarga.
+De forma conceitual:
 
-**Aplicação**
-- Banco de dados com os usuários cadastrados e informações ligadas a eles. Além de unidades de recarga, sessões e faturas.
-- Coleta de dados dos eventos obtidos, por meio do controlador OCPP. Utilização dos dados coletados para lançar no perfil do usuário para receber a fatura referente ao uso do carregador.
-- IA na previsão de anomalias e de uso
+```text
+Total = custo de energia
+      + custo de ociosidade elegível
+      + taxa de sessão sem reserva
+      + cobranças de no-show
+      + custo fixo mensal
+```
 
-**Apresentação**
-- Interface gráfica amigável para usuários e gestores. Aqui será possível consultar o uso e as faturas de cada usuário
+O custo de energia é calculado por faixa horária, com base nos intervalos entre leituras. Para ociosidade, o sistema considera o tempo após o fim da carga e a carência, e só cobra os intervalos elegíveis em que há fila. Sessões interrompidas por `PowerLoss` não recebem cobrança de ociosidade. Reservas não utilizadas e cancelamentos tardios são tratados de acordo com os eventos reconhecidos pelo leitor e com a antecedência configurada.
 
-**Como os dados fluem da sessão de recarga até a fatura do usuário**
+As cobranças são arredondadas a centavos com regra decimal de meio para cima. Sessões sem usuário válido ou sem identificação adequada não devem ser atribuídas arbitrariamente a outro usuário: o sistema as reporta como não identificadas e mantém a situação visível para revisão.
 
-1. Usuário se conecta ao carregador
-2. Identifica-se o usuário
-3. Identifica os eventos pelo OCPP (IA: organiza os eventos)
-4. Salva os eventos no perfil do usuário na API SEMS (IA otimiza a estrutura de dados e gera previsões de uso)
-5. Calcula o custo
-6. Gera a cobrança
+### Alterar os parâmetros
 
-**Opção de Aprofundamento C - Esquema da base de dados: defina e documente o esquema de dados da plataforma, como entidades (usuário, unidade, sessão e fatura), atributos, relacionamentos e exemplos de registros simulados que serão usados na sprint 02.**
+Edite `config/parametros_rateio.csv`, mantendo as colunas `parametro`, `valor` e, opcionalmente, `descricao`. Um arquivo `parametros_rateio.csv` dentro da própria pasta de uso pode sobrescrever apenas os parâmetros ali declarados.
 
-- Usuário: id, nome, e-mail, veículo_id
-- Unidade: id, bloco, número, custo_fixo, num_carregador, carregador_id
-- Carregador: id, unidade_id, status
-- Veículo: id, usuáro_id, placa, modelo, kW_bateria
-- Sessão: id, usuário_id, veiculo_id, duração, kWh, status
-- Fatura: id, unidade_id, sessão_id, usuário_id
+Após alterar tarifas ou taxas, execute novamente o rateio e revise os arquivos gerados. As tarifas são parâmetros de demonstração e não devem ser interpretadas como tarifas oficiais de uma concessionária.
 
-**Diagrama da solucao**
-<img width="1024" height="768" alt="diagrama" src="https://github.com/user-attachments/assets/1239ed3c-4119-41cb-a6ba-d6e6b4eeaf26" />
+## 10. Módulo experimental de IA
 
+O módulo `ia_uso.py` acrescenta duas análises independentes da cobrança oficial. Ele pode ser executado diretamente ou pelo painel autenticado do gestor, na opção **Análise de IA (anomalias e previsão)**. Essa opção lê os CSVs da pasta `uso_carregador/` e grava `fatura_saida/relatorio_ia.csv`.
 
-## MODELO DE RATEIO DEFINIDO
+### Detecção de anomalias
 
-Perante a prestação do sistema de carregamento compartilhado pelo condomínio residencial, é possível que a gestão financeira utilize o rateio na precificação da atividade do equipamento através de softwares de controle de consumo dos moradores e consumidores do serviço, calculando o consumo em kWh utilizados nas margens de horários pré-definidas e verificando o tempo total em cada sessão de recarga. Utilizando o MODBUS e OCPP do HCA G2 teremos um monitoramento do consumo de energia por usuário, tendo os dados organizados através da API SEMS.
+- Usa **Isolation Forest** (`IsolationForest`) para sinalizar sessões com características estatisticamente incomuns.
+- Complementa o modelo com verificações explícitas de energia negativa, duração inválida, potência elevada e identificação incompleta.
+- Verifica SOC fora de 0%–100% e queda relevante do SOC enquanto o medidor acumulado aumenta.
+- Sinaliza sessões sem agendamento, início fora da janela reservada e reservas criadas com menos de 60 minutos de antecedência. Sessões avulsas podem ser legítimas e ficam pendentes de conferência humana.
+- Produz categorias e motivos de alerta para apoiar a revisão humana.
 
-**Variáveis usadas:**
+Um alerta significa que o registro merece análise; **não comprova fraude, defeito elétrico ou uso indevido**. A detecção depende da qualidade e representatividade dos dados. Como o CSV não informa a capacidade nominal da bateria por veículo, o módulo ainda não verifica a coerência quantitativa entre kWh e variação do SOC; essa extensão requer cadastro de capacidade e tolerâncias de medição/BMS.
 
-- Agendamento de recarga – verifica se usuário estava agendado para aquele ponto de recarga
-- Tempo de carregamento – verifica o tempo de utilização no momento de recarga, gerando cobrança adicionais a cada 30 minutos;
-- Horário da utilização do equipamento – verifica o horário em que o equipamento foi utilizado gerando cobrança adicional em horário de pico;
+### Previsão de uso
+
+- Agrega o consumo das sessões em kWh por dia.
+- Com histórico suficiente, usa `RandomForestRegressor` com atributos de calendário e defasagens do consumo.
+- Com menos de dez dias de histórico, utiliza uma média móvel dos últimos sete dias como alternativa simples.
+- Permite escolher o horizonte da previsão, por exemplo, sete ou 14 dias.
+
+### Saída da IA
+
+O arquivo `fatura_saida/relatorio_ia.csv` reúne os alertas de sessões e os valores previstos por dia, com método utilizado e observações. O módulo não altera CSVs de origem, não atualiza `ev_chargeops.xlsx`, não modifica `fatura_mensal.csv` e não bloqueia sessões.
+
+## 11. Testes automatizados
+
+O projeto utiliza a biblioteca padrão `unittest`.
+
+```bash
+python -m unittest discover -s tests -v
+```
+
+- **`tests/test_rateio.py`** — testa regras de cobrança, faixas tarifárias, validações, sessões identificadas/não identificadas e cálculo dos totais.
+- **`tests/test_ia_uso.py`** — testa a previsão para o número de dias solicitado, o fallback para histórico curto, a sinalização de sessões sem identificação e o comportamento quando não existem sessões.
+- **`tests/test_main.py`** — testa a validação do CPF no cadastro (dígitos verificadores, tamanho e dígitos repetidos).
+
+Os testes automatizados ajudam a detectar regressões, mas não substituem testes com dados reais de carregadores, validação financeira por responsáveis nem homologação de segurança elétrica.
+
+## 12. Decisões técnicas e limitações
+
+### Decisões adotadas
+
+- **CSV como formato de telemetria simulada:** simples de inspecionar, versionar e gerar em cenários repetíveis.
+- **Leitor centralizado:** reduz a duplicação de parsing entre rateio e IA.
+- **Parâmetros fora do código:** facilita a revisão das tarifas sem modificar as funções de regra.
+- **Separação entre análise e cobrança:** mantém os resultados de IA como apoio, sem impacto automático no valor financeiro.
+- **Testes automatizados:** permitem verificar regras críticas e casos de borda durante a evolução do projeto.
+
+### Limitações conhecidas
+
+- O gerador produz dados sintéticos; não há conexão com carregadores físicos, OCPP, APIs de fabricantes ou medidores reais.
+- O Excel funciona como armazenamento local simplificado. Não oferece as garantias de concorrência, transações, permissões e auditoria de um banco de dados de produção.
+- O fluxo de uso do menu e os CSVs sintéticos não estão integrados como um único serviço transacional. Reservas feitas no menu não alteram automaticamente os arquivos sintéticos utilizados pelo rateio.
+- O armazenamento de senha usa hash, mas uma aplicação real exigiria controles adicionais, gestão de segredos, política de acesso e proteção de dados pessoais.
+- A IA é demonstrativa, não certificada, e pode produzir falsos positivos ou previsões imprecisas.
+- Não há cobrança financeira real, emissão fiscal, gateway de pagamento nem integração com concessionárias.
+
+## 13. Solução de problemas
+
+### “Não foram encontrados arquivos de uso” ou erro de leitura
+
+1. Execute `python gerar_uso_carregador.py --seed 5`.
+2. Confirme que os arquivos `.csv` estão em `uso_carregador/`.
+3. Execute `python leitor_uso.py` para conferir se o leitor reconhece os arquivos.
+4. Se utilizou `--saida`, passe essa pasta ao leitor, ao rateio e à IA.
+
+### O módulo de IA não inicia
+
+Instale as dependências adicionais:
+
+```bash
+python -m pip install -r requirements.txt
+```
+
+### A fatura apresenta avisos ou sessões não identificadas
+
+Abra `fatura_saida/avisos.txt` e confira os registros no `detalhe_sessoes.csv`. Os avisos devem ser investigados; não atribua automaticamente consumo sem identificação a um morador.
+
+### Quero testar registros anômalos
+
+```bash
+python gerar_uso_carregador.py --seed 5 --anomalias
+python leitor_uso.py
+python ia_uso.py
+```
+
+O parâmetro `--anomalias` injeta problemas de dados no conjunto sintético para exercitar as validações. Para voltar ao cenário padrão, gere novamente sem essa opção.
+
+### Esqueci a senha do gestor
+
+A senha do gestor fica gravada (em hash) na aba `config` de `ev_chargeops.xlsx`. Para defini-la novamente, apague essa linha da aba ou remova o arquivo `ev_chargeops.xlsx` (isso também apaga os cadastros e reservas feitos no aplicativo). No próximo acesso ao painel, o programa pede uma nova senha.
+
+### Quero apagar os resultados e começar novamente
+
+Os arquivos em `uso_carregador/` e `fatura_saida/` são dados de execução. Faça uma cópia se precisar preservá-los antes de removê-los ou regenerá-los. Evite apagar `ev_chargeops.xlsx` se quiser manter os cadastros criados na demonstração.
+
+## 14. Evidências de funcionamento
+
+As evidências estão na pasta [`evidencias/`](evidencias/), geradas executando o próprio código do repositório:
+
+- [`evidencias/demonstracao.ipynb`](evidencias/demonstracao.ipynb) — notebook executado com o fluxo completo: dados de uso, leitura das sessões, rateio, composição da fatura, análise de IA, cenário com anomalias e testes.
+- [`evidencias/sessao_terminal.txt`](evidencias/sessao_terminal.txt) — sessão real do `main.py`, do cadastro do morador até o painel do gestor.
+- [`evidencias/dados/`](evidencias/dados/) — CSVs de entrada e arquivos de saída (fatura, detalhe por sessão, avisos e relatório da IA).
+
+![Composição da fatura por unidade](evidencias/composicao_fatura.png)
 
 ## UTILIZACAO DA IA
 
 Uso de IA: A ferramenta de IA foi utilizada nas seguintes etapas:
 
-- Pesquisas de frente - para compressão dos textos das pesquisas inicias de cada frente, facilitando assim a compreensão dos textos por parte da equipe.
+- Análise e desenvolvimento do projeto - para auxiliar na estruturação e funcionalidade do projeto, com supervisão da equipe.
 - Documento ReadMe - para verificação ortográfica e auxílio na construção do texto, através da sugestão de palavras-chave.
-- Diagrama de rateio - recriando o diagrama elaborado pela equipe melhorando elementos visuais, facilitando a compreensão da imagem.
-
-## PLANO PARA SPRINT 2
-
-- Definição arbitraria dos valores unitários por margens de horário
-- Desenvolvimento do software em Python para medição do consumo por apartamento e do condomínio em geral utilizando os dados gerados pela API da GoodWe.
-- Desenvolver um aplicativo de agendamento dos pontos de recarga.
-
-## REFERENCIAS
-
-- https://mycond.com.br/desafios-para-carregadores-de-carros-eletricos-em-condominios/
-- https://metalsol.com.br/carregadores-de-carros-eletricos-o-futuro-da-mobilidade-no-seu-condominio/
-- https://use-move.com/2023/12/20/sistemas-de-recarga-de-veiculos-eletricos-em-condominios-o-que-saber-antes-de-instalar/
-- https://www.ampeco.com/guides/iso-15118-complete-guide-for-cpos-and-emsps/
-- https://www.neocharge.com.br/tudo-sobre/carregador-carro-eletrico/protocolo-ocpp
-- https://voltbras.com/tudo-sobre-a-cobranca-de-recargas-de-carros-eletricos-no-brasil/
-- https://proev.co.uk/blog/how-to-profit-from-ev-charging-business-models-fast-chargers-revenue-strategies/
-- https://smabc.org.br/brasil-chega-a-25-mil-eletropostos-sendo-33-de-carga-rapida/
-- https://monitormercantil.com.br/venda-de-carros-eletrificados-dispara-e-cresce-655-em-2026/
-- Protocolo de Ponto de Carregamento Aberto - Wikipédia
-- Modbus - Wikipedia
-- RFID: o que é, como funciona e aplicações dessa tecnologia - TOTVS
-- LAN x MAN x WAN: entenda as diferenças entre os tipos de rede | G1
-- Bluetooth Technology Overview | Bluetooth® Technology Website

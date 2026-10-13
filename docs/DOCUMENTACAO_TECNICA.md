@@ -64,9 +64,10 @@ A aplicação interativa (`main.py`) e o pipeline analítico baseado em CSV são
 - `src/rateio/saida.py`: grava os resultados para consumo posterior por painel/app ou revisão manual.
 - `calcular_fatura.py`: interface de linha de comando; delega o cálculo ao pacote `src.rateio`.
 - `ia_uso.py`: módulo opcional de análise exploratória. Reutiliza `UsoSource`, sinaliza sessões estatisticamente incomuns com `IsolationForest` e regras complementares, e prevê consumo diário com `RandomForestRegressor` quando há histórico suficiente. Não altera os CSVs de origem nem a fatura oficial.
-- `requirements-ia.txt`: dependências necessárias ao módulo de IA, separadas do fluxo principal.
+- `requirements.txt`: dependências do projeto (pandas e openpyxl para o aplicativo e o rateio; scikit-learn para o módulo de IA).
 - `tests/test_rateio.py`: testes do rateio, regras, validações e CLI.
 - `tests/test_ia_uso.py`: testes específicos de previsão, histórico curto, ausência de sessões e sessões sem identificação.
+- `tests/test_main.py`: testes da validação do CPF no cadastro da aplicação de terminal.
 
 ### Modelo de dados principal
 
@@ -225,7 +226,7 @@ O consumo é agregado por dia. Com histórico suficiente (a implementação util
 O fluxo principal de cadastro e faturamento não precisa carregar o pacote de IA. Para usar a opção de análise no painel do gestor, instale as dependências opcionais e gere ou disponibilize os CSVs:
 
 ```bash
-pip install -r requirements-ia.txt
+pip install -r requirements.txt
 python gerar_uso_carregador.py --seed 5
 python ia_uso.py
 ```

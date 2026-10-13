@@ -3,3 +3,10 @@ __pycache__/
 uso_carregador/
 fatura_saida/
 ref5/
+
+# Dados locais do aplicativo (cadastros, reservas e senha do gestor).
+# O arquivo é criado por main.py no primeiro cadastro ou acesso ao painel.
+ev_chargeops.xlsx
+
+# Saídas geradas ao rodar os scripts dentro de tests/
+tests/test_saida/

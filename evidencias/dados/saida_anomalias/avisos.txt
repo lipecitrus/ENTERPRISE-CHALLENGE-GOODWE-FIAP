@@ -1,0 +1,4 @@
+AG0008: criada com menos de 60 min de antecedência
+S0018: medidor avançou 3.200 kWh desde a sessão S0017 (consumo fora de sessão)
+S0002: sem usuário; energia (14.11 kWh) vai para NAO_IDENTIFICADO
+Conciliação: o medidor avançou 777.23 kWh; as sessões explicam 774.03 kWh; diferença 3.20 kWh

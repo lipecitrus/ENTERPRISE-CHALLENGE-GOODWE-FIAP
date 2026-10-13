@@ -17,7 +17,7 @@ Após instalar as dependências abaixo, inicie `python main.py`, entre no **Pain
 Na raiz do projeto:
 
 ```bash
-pip install -r requirements-ia.txt
+pip install -r requirements.txt
 python gerar_uso_carregador.py --seed 5
 python ia_uso.py
 ```

@@ -1,0 +1,240 @@
+# Sessão gravada em 13/10/2026 21:12 com evidencias/gerar_sessao_terminal.py
+# Dados de uso: python gerar_uso_carregador.py --seed 5. As senhas não são exibidas (getpass).
+
+$ python main.py
+
+=== EV ChargeOps ===
+  [1] Entrar (CPF e senha)
+  [2] Cadastrar-se
+  [3] Painel do gestor
+  [0] Voltar/Sair
+Opção: 2
+Nome: Juliana Castro
+CPF: 529.982.247-25
+Unidade (ex.: B-21): B-21
+Crie uma senha (mín. 6): 
+Repita: 
+Cadastro feito (CPF ***.982.247-**). Seu código: U03
+
+=== EV ChargeOps ===
+  [1] Entrar (CPF e senha)
+  [2] Cadastrar-se
+  [3] Painel do gestor
+  [0] Voltar/Sair
+Opção: 1
+CPF: 52998224725
+Senha: 
+
+=== Olá, Juliana — CPF ***.982.247-** — unidade B-21 ===
+  [1] Novo agendamento
+  [2] Meus agendamentos
+  [3] Iniciar carregamento
+  [4] Encerrar carregamento
+  [5] Fatura mensal
+  [0] Voltar/Sair
+Opção: 1
+Início (dd/mm/aaaa hh:mm): 14/10/2026 10:00
+Duração em minutos (múltiplo de 30): 60
+Reserva confirmada. No-show ou cancelamento com menos de 60 min: R$ 5,00.
+
+=== Olá, Juliana — CPF ***.982.247-** — unidade B-21 ===
+  [1] Novo agendamento
+  [2] Meus agendamentos
+  [3] Iniciar carregamento
+  [4] Encerrar carregamento
+  [5] Fatura mensal
+  [0] Voltar/Sair
+Opção: 1
+Início (dd/mm/aaaa hh:mm): 14/10/2026 10:00
+Duração em minutos (múltiplo de 30): 60
+Horário já reservado.
+
+=== Olá, Juliana — CPF ***.982.247-** — unidade B-21 ===
+  [1] Novo agendamento
+  [2] Meus agendamentos
+  [3] Iniciar carregamento
+  [4] Encerrar carregamento
+  [5] Fatura mensal
+  [0] Voltar/Sair
+Opção: 2
+  #1  2026-10-14 10:00 → 11:00  ativo
+Número para cancelar (Enter volta): 
+
+=== Olá, Juliana — CPF ***.982.247-** — unidade B-21 ===
+  [1] Novo agendamento
+  [2] Meus agendamentos
+  [3] Iniciar carregamento
+  [4] Encerrar carregamento
+  [5] Fatura mensal
+  [0] Voltar/Sair
+Opção: 5
+
+FATURA 2026-09 — Juliana Castro (B-21), CPF ***.982.247-**
+11 sessões, 129.99 kWh
+  Energia        R$    140,10
+  Ociosidade     R$     22,00
+  Sem reserva    R$     10,50
+  No-show        R$      0,00
+  Custo fixo     R$     15,00
+  TOTAL          R$    187,60
+
+=== Olá, Juliana — CPF ***.982.247-** — unidade B-21 ===
+  [1] Novo agendamento
+  [2] Meus agendamentos
+  [3] Iniciar carregamento
+  [4] Encerrar carregamento
+  [5] Fatura mensal
+  [0] Voltar/Sair
+Opção: 3
+[1] app  [2] rfid: 2
+Uso avulso: taxa de R$ 1,50.
+Carregador liberado para Juliana Castro (B-21) às 21:12.
+
+=== Olá, Juliana — CPF ***.982.247-** — unidade B-21 ===
+  [1] Novo agendamento
+  [2] Meus agendamentos
+  [3] Iniciar carregamento
+  [4] Encerrar carregamento
+  [5] Fatura mensal
+  [0] Voltar/Sair
+Opção: 4
+Carregamento encerrado.
+
+=== Olá, Juliana — CPF ***.982.247-** — unidade B-21 ===
+  [1] Novo agendamento
+  [2] Meus agendamentos
+  [3] Iniciar carregamento
+  [4] Encerrar carregamento
+  [5] Fatura mensal
+  [0] Voltar/Sair
+Opção: 0
+
+=== EV ChargeOps ===
+  [1] Entrar (CPF e senha)
+  [2] Cadastrar-se
+  [3] Painel do gestor
+  [0] Voltar/Sair
+Opção: 3
+Primeiro acesso: defina a senha do gestor.
+Senha do gestor (mín. 6): 
+Repita: 
+
+=== GESTOR ===
+  [1] Resumo do mês
+  [2] Liberações (quem iniciou)
+  [3] Agenda
+  [4] Exportar fatura (xlsx)
+  [5] Análise de IA (anomalias e previsão)
+  [0] Voltar/Sair
+Opção: 1
+Competência 2026-09: 5 arquivo(s) de uso lidos, 34 sessões reconstruídas
+
+unid  usuário                  sess     kWh   energia  ocios.  s/res no-show   fixo     TOTAL
+A-11  Ana Beatriz Souza           7   154.5    159,07    0,00   1,50    0,00  15,00    175,57
+B-14  Ricardo Mendes              6   277.7    269,56    0,00   6,00    0,00  15,00    290,56
+B-21  Juliana Castro             11   130.0    140,10   22,00  10,50    0,00  15,00    187,60
+B-33  Marcos Vinicius Rocha       6   110.4    101,67    0,00   6,00    5,00  15,00    127,67
+B-42  Patricia Nogueira           4   101.5     86,30    0,00   1,50    0,00  15,00    102,80
+                                                                  TOTAL A ARRECADAR  R$ 884,20
+0 aviso(s)
+
+=== GESTOR ===
+  [1] Resumo do mês
+  [2] Liberações (quem iniciou)
+  [3] Agenda
+  [4] Exportar fatura (xlsx)
+  [5] Análise de IA (anomalias e previsão)
+  [0] Voltar/Sair
+Opção: 2
+  2026-10-13 21:12 → 2026-10-13 21:12  Juliana Castro (B-21) CPF ***.982.247-**  AVULSO
+
+=== GESTOR ===
+  [1] Resumo do mês
+  [2] Liberações (quem iniciou)
+  [3] Agenda
+  [4] Exportar fatura (xlsx)
+  [5] Análise de IA (anomalias e previsão)
+  [0] Voltar/Sair
+Opção: 3
+  #1 2026-10-14 10:00 → 11:00  Juliana Castro  ativo
+
+=== GESTOR ===
+  [1] Resumo do mês
+  [2] Liberações (quem iniciou)
+  [3] Agenda
+  [4] Exportar fatura (xlsx)
+  [5] Análise de IA (anomalias e previsão)
+  [0] Voltar/Sair
+Opção: 4
+Gravado: fatura_saida/fatura_mensal.xlsx
+
+=== GESTOR ===
+  [1] Resumo do mês
+  [2] Liberações (quem iniciou)
+  [3] Agenda
+  [4] Exportar fatura (xlsx)
+  [5] Análise de IA (anomalias e previsão)
+  [0] Voltar/Sair
+Opção: 5
+
+ANÁLISE DA IA.
+Arquivos lidos: 5 | sessões analisadas: 34
+Anomalias sinalizadas: 19
+  Sessão S0002 | Usuário U03 | 01/09/2026 23:30
+    Consumo: 14.111 kWh | Duração: 428 min
+    Motivo: sessão sem agendamento associado; confirmar se a recarga avulsa foi autorizada
+  Sessão S0006 | Usuário U03 | 05/09/2026 19:30
+    Consumo: 8.734 kWh | Duração: 581 min
+    Motivo: combinação de consumo, duração e potência diferente do padrão observado
+  Sessão S0007 | Usuário U05 | 07/09/2026 09:01
+    Consumo: 24.893 kWh | Duração: 244 min
+    Motivo: sessão sem agendamento associado; confirmar se a recarga avulsa foi autorizada
+  Sessão S0010 | Usuário U04 | 10/09/2026 08:06
+    Consumo: 20.536 kWh | Duração: 200 min
+    Motivo: sessão iniciada no fim ou após o término da reserva
+  Sessão S0011 | Usuário U02 | 10/09/2026 11:29
+    Consumo: 54.294 kWh | Duração: 702 min
+    Motivo: sessão sem agendamento associado; confirmar se a recarga avulsa foi autorizada; combinação de consumo, duração e potência diferente do padrão observado
+  Sessão S0012 | Usuário U03 | 11/09/2026 19:40
+    Consumo: 10.309 kWh | Duração: 215 min
+    Motivo: sessão sem agendamento associado; confirmar se a recarga avulsa foi autorizada
+  Sessão S0013 | Usuário U04 | 12/09/2026 18:39
+    Consumo: 20.415 kWh | Duração: 191 min
+    Motivo: sessão sem agendamento associado; confirmar se a recarga avulsa foi autorizada
+  Sessão S0015 | Usuário U03 | 14/09/2026 19:21
+    Consumo: 18.007 kWh | Duração: 447 min
+    Motivo: sessão sem agendamento associado; confirmar se a recarga avulsa foi autorizada
+  Sessão S0017 | Usuário U02 | 15/09/2026 16:15
+    Consumo: 50.665 kWh | Duração: 674 min
+    Motivo: sessão sem agendamento associado; confirmar se a recarga avulsa foi autorizada
+  Sessão S0018 | Usuário U03 | 16/09/2026 20:35
+    Consumo: 8.680 kWh | Duração: 159 min
+    Motivo: sessão sem agendamento associado; confirmar se a recarga avulsa foi autorizada
+
+Previsão de consumo para os próximos 7 dias (estimativa em kWh):
+      Data  Consumo previsto (kWh)
+01/10/2026                  31.242
+02/10/2026                  25.046
+03/10/2026                  38.799
+04/10/2026                  15.211
+05/10/2026                  18.471
+06/10/2026                  19.713
+07/10/2026                  22.593
+
+Relatório salvo em: fatura_saida/relatorio_ia.csv
+
+=== GESTOR ===
+  [1] Resumo do mês
+  [2] Liberações (quem iniciou)
+  [3] Agenda
+  [4] Exportar fatura (xlsx)
+  [5] Análise de IA (anomalias e previsão)
+  [0] Voltar/Sair
+Opção: 0
+
+=== EV ChargeOps ===
+  [1] Entrar (CPF e senha)
+  [2] Cadastrar-se
+  [3] Painel do gestor
+  [0] Voltar/Sair
+Opção: 0
