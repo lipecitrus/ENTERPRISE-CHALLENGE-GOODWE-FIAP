@@ -448,6 +448,16 @@ A senha do gestor fica gravada (em hash) na aba `config` de `ev_chargeops.xlsx`.
 
 Os arquivos em `uso_carregador/` e `fatura_saida/` são dados de execução. Faça uma cópia se precisar preservá-los antes de removê-los ou regenerá-los. Evite apagar `ev_chargeops.xlsx` se quiser manter os cadastros criados na demonstração.
 
+## 14. Evidências de funcionamento
+
+As evidências estão na pasta [`evidencias/`](evidencias/), geradas executando o próprio código do repositório:
+
+- [`evidencias/demonstracao.ipynb`](evidencias/demonstracao.ipynb) — notebook executado com o fluxo completo: dados de uso, leitura das sessões, rateio, composição da fatura, análise de IA, cenário com anomalias e testes.
+- [`evidencias/sessao_terminal.txt`](evidencias/sessao_terminal.txt) — sessão real do `main.py`, do cadastro do morador até o painel do gestor.
+- [`evidencias/dados/`](evidencias/dados/) — CSVs de entrada e arquivos de saída (fatura, detalhe por sessão, avisos e relatório da IA).
+
+![Composição da fatura por unidade](evidencias/composicao_fatura.png)
+
 ## UTILIZACAO DA IA
 
 Uso de IA: A ferramenta de IA foi utilizada nas seguintes etapas:
