@@ -98,9 +98,14 @@ def menu(titulo, opcoes):
 
 
 def cpf_valido(d):
-    if len(d) == 11:
-        return True
-    
+    """CPF com 11 dígitos, não repetidos, e dígitos verificadores corretos."""
+    if len(d) != 11 or not d.isdigit() or d == d[0] * 11:
+        return False
+    for n in (9, 10):                        # 1º e 2º dígito verificador
+        soma = sum(int(d[i]) * (n + 1 - i) for i in range(n))
+        if (soma * 10 % 11) % 10 != int(d[n]):
+            return False
+    return True
 
 
 def mascara(cpf):
@@ -182,8 +187,7 @@ def agendar(u):
     if ini.minute % 30 or dur <= 0 or dur % 30:
         return print("Use blocos de 30 minutos.")
     if dur > 120:
-            return print(f"Duração máxima: 120 min.")
-    
+        return print("Duração máxima: 120 min.")
     if ini < agora() + PAR.antecedencia:
         return print(f"Reserva só com {MIN_ANT} min de antecedência.")
     fim = ini + timedelta(minutes=dur)

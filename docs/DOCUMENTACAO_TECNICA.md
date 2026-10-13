@@ -67,6 +67,7 @@ A aplicação interativa (`main.py`) e o pipeline analítico baseado em CSV são
 - `requirements.txt`: dependências do projeto (pandas e openpyxl para o aplicativo e o rateio; scikit-learn para o módulo de IA).
 - `tests/test_rateio.py`: testes do rateio, regras, validações e CLI.
 - `tests/test_ia_uso.py`: testes específicos de previsão, histórico curto, ausência de sessões e sessões sem identificação.
+- `tests/test_main.py`: testes da validação do CPF no cadastro da aplicação de terminal.
 
 ### Modelo de dados principal
 

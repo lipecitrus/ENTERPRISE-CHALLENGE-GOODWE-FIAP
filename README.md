@@ -49,7 +49,7 @@ A pesquisa, a arquitetura e o modelo de rateio definidos na Sprint 01 estão em 
 - Cadastro com nome, CPF, unidade e senha.
 - Login usando CPF e senha.
 - Consulta e cancelamento de agendamentos.
-- Criação de reservas em blocos de 30 minutos, respeitando as regras configuradas.
+- Criação de reservas em blocos de 30 minutos, com duração máxima de 120 minutos, respeitando as regras configuradas.
 - Início e encerramento de utilização do carregador no protótipo.
 - Consulta da fatura mensal associada aos registros disponíveis.
 
@@ -157,7 +157,8 @@ ENTERPRISE-CHALLENGE-GOODWE-FIAP/
 │       └── README.md
 ├── tests/
 │   ├── test_rateio.py
-│   └── test_ia_uso.py
+│   ├── test_ia_uso.py
+│   └── test_main.py
 ├── docs/
 │   ├── README_SPRINT_1.md           # pesquisa e planejamento da Sprint 01
 │   ├── DOCUMENTACAO_TECNICA.md      # arquitetura e regras em detalhe
@@ -387,6 +388,7 @@ python -m unittest discover -s tests -v
 
 - **`tests/test_rateio.py`** — testa regras de cobrança, faixas tarifárias, validações, sessões identificadas/não identificadas e cálculo dos totais.
 - **`tests/test_ia_uso.py`** — testa a previsão para o número de dias solicitado, o fallback para histórico curto, a sinalização de sessões sem identificação e o comportamento quando não existem sessões.
+- **`tests/test_main.py`** — testa a validação do CPF no cadastro (dígitos verificadores, tamanho e dígitos repetidos).
 
 Os testes automatizados ajudam a detectar regressões, mas não substituem testes com dados reais de carregadores, validação financeira por responsáveis nem homologação de segurança elétrica.
 
