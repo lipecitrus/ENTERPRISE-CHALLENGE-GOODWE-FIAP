@@ -5,8 +5,8 @@ Testes da frente 2 (rateio e fatura). Só biblioteca padrão:
 
 1. Regras isoladas, com sessões montadas à mão (sem depender do gerador).
 2. Aceitação com a semente 5 (seção 3.3 do Sistema de Leitura), com cada cobrança
-   arredondada a centavos antes de somar: R$ 884,20 (o documento traz R$ 884,19,
-   calculado sem arredondar por sessão), S0009, S0020 e o no-show da AG0004.
+   arredondada a centavos antes de somar: R$ 885,70 (inclui a S0010, cobrada como
+   avulsa por começar depois do fim da reserva), S0009, S0020 e o no-show da AG0004.
 3. Dados com --anomalias (validações da seção 5.1).
 4. Propriedades que valem para qualquer mês gerado e a linha de comando (calcular_fatura.py).
 """
