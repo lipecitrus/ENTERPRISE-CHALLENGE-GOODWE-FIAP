@@ -1,5 +1,7 @@
 # ENTERPRISE CHALLENGE 2026 — GOODWE + FIAP
 
+> Documento da **Sprint 01** (pesquisa e documentação), mantido como registro histórico. A descrição da solução implementada na Sprint 02 está no [README principal](../README.md).
+
 Grupo 11: Filipe Augusto Chaves (rm570827), Yury Alexander Tavares (rm572825), Murillo Gomes de Almeida (rm572196), Arthur Henrique Ruiz Ramos (rm568738)
 
 ## DESCRIÇÃO DO PROBLEMA E DO CONTEXTO DO DESAFIO
