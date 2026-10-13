@@ -291,7 +291,7 @@ def analisar_ia():
         from ia_uso import executar
     except ImportError as exc:
         print("Não foi possível carregar o módulo de IA.")
-        print("Instale as dependências com: pip install -r requirements-ia.txt")
+        print("Instale as dependências com: pip install -r requirements.txt")
         print(f"Detalhe: {exc}")
         return
 

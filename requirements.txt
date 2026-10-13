@@ -1,0 +1,6 @@
+# Aplicativo (main.py), leitor e rateio
+pandas>=2.0
+openpyxl>=3.1
+
+# Módulo de IA (ia_uso.py): detecção de anomalias e previsão de uso
+scikit-learn>=1.3
