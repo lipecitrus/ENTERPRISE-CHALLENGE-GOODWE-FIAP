@@ -1,4 +1,4 @@
-# Sessão gravada em 13/10/2026 21:06 com evidencias/gerar_sessao_terminal.py
+# Sessão gravada em 13/10/2026 21:12 com evidencias/gerar_sessao_terminal.py
 # Dados de uso: python gerar_uso_carregador.py --seed 5. As senhas não são exibidas (getpass).
 
 $ python main.py
@@ -88,7 +88,7 @@ FATURA 2026-09 — Juliana Castro (B-21), CPF ***.982.247-**
 Opção: 3
 [1] app  [2] rfid: 2
 Uso avulso: taxa de R$ 1,50.
-Carregador liberado para Juliana Castro (B-21) às 21:06.
+Carregador liberado para Juliana Castro (B-21) às 21:12.
 
 === Olá, Juliana — CPF ***.982.247-** — unidade B-21 ===
   [1] Novo agendamento
@@ -146,7 +146,7 @@ B-42  Patricia Nogueira           4   101.5     86,30    0,00   1,50    0,00  15
   [5] Análise de IA (anomalias e previsão)
   [0] Voltar/Sair
 Opção: 2
-  2026-10-13 21:06 → 2026-10-13 21:06  Juliana Castro (B-21) CPF ***.982.247-**  AVULSO
+  2026-10-13 21:12 → 2026-10-13 21:12  Juliana Castro (B-21) CPF ***.982.247-**  AVULSO
 
 === GESTOR ===
   [1] Resumo do mês

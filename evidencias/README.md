@@ -18,7 +18,7 @@ Arquivos gerados executando o próprio código do repositório, com os dados sim
 - 5 moradores, 34 sessões e 774,03 kWh no mês; total a arrecadar de R$ 884,20.
 - Fatura da unidade B-21 (Juliana Castro): R$ 187,60 (energia R$ 140,10 + ociosidade R$ 22,00 + sem reserva R$ 10,50 + custo fixo R$ 15,00). O notebook confere que a soma das sessões mais o custo fixo bate com o total da fatura.
 - No cenário com anomalias, o rateio não atribui a sessão sem usuário a nenhum morador (fica como `NAO_IDENTIFICADO`) e emite 4 avisos; a IA também sinaliza essas sessões.
-- 39 testes automatizados passando.
+- 42 testes automatizados passando.
 
 ## Como gerar novamente
 
